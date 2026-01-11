@@ -151,31 +151,38 @@ After exporting your Help Book:
 The CLI tool provides automation capabilities:
 
 ```bash
-# Export a help book
-helpbooks export --content ./content --assets ./assets --output ./output
+# Create a configuration file interactively
+helpbooks config
 
-# Validate content structure
-helpbooks validate --content ./content
+# Generate Help Book from configuration
+helpbooks generate
 
-# List all pages and their metadata
-helpbooks list --content ./content
+# Generate with custom paths
+helpbooks generate --content ./docs --output ./build
+
+# Use custom config file
+helpbooks generate -c myconfig.json
 ```
 
-### CLI Options
+### CLI Commands
 
 ```
 USAGE: helpbooks <command> [options]
 
 COMMANDS:
-  export      Export content to Help Book bundle
-  validate    Validate content structure and frontmatter
-  list        List all pages with their metadata
+  config              Create a configuration file interactively
+  generate            Generate Help Book from configuration
+  help                Show help message
+  version             Show version information
 
-OPTIONS:
-  --content <path>    Path to content directory (required)
-  --assets <path>     Path to assets directory (optional)
-  --output <path>     Output path for Help Book bundle
-  --help              Show help information
+CONFIG OPTIONS:
+  -c, --config <path>     Path to config file (default: helpbooks.json)
+
+GENERATE OPTIONS:
+  -c, --config <path>     Path to config file (default: helpbooks.json)
+  --content <path>        Override content folder path
+  --assets <path>         Override assets folder path
+  -o, --output <path>     Override output folder path
 ```
 
 ## Project Architecture
