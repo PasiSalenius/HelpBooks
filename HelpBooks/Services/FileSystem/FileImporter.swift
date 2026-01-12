@@ -37,7 +37,7 @@ class FileImporter {
             )
         }
 
-        var project = HelpProject(
+        let project = HelpProject(
             name: name,
             sourceDirectory: url,
             metadata: metadata
@@ -70,15 +70,23 @@ class FileImporter {
         let markdownParser = MarkdownParser()
         let shortcodeProcessor = ShortcodeProcessor()
 
-        guard let enumerator = fm.enumerator(
-            at: url,
-            includingPropertiesForKeys: [.isRegularFileKey],
-            options: [.skipsHiddenFiles]
-        ) else {
+        // Collect URLs synchronously to avoid async iteration warning
+        let allURLs: [URL] = await Task.detached {
+            guard let enumerator = fm.enumerator(
+                at: url,
+                includingPropertiesForKeys: [.isRegularFileKey],
+                options: [.skipsHiddenFiles]
+            ) else {
+                return []
+            }
+            return enumerator.allObjects.compactMap { $0 as? URL }
+        }.value
+
+        guard !allURLs.isEmpty else {
             throw FileImporterError.invalidDirectory
         }
 
-        for case let fileURL as URL in enumerator {
+        for fileURL in allURLs {
             guard fileURL.pathExtension == "md" else { continue }
 
             let fileName = fileURL.lastPathComponent
@@ -129,15 +137,20 @@ class FileImporter {
         let validExtensions = ["png", "jpg", "jpeg", "gif", "svg", "webp", "css", "js"]
 
         let fm = FileManager.default
-        guard let enumerator = fm.enumerator(
-            at: url,
-            includingPropertiesForKeys: [.isRegularFileKey],
-            options: [.skipsHiddenFiles]
-        ) else {
-            return []
-        }
 
-        for case let fileURL as URL in enumerator {
+        // Collect URLs synchronously to avoid async iteration warning
+        let allURLs: [URL] = await Task.detached {
+            guard let enumerator = fm.enumerator(
+                at: url,
+                includingPropertiesForKeys: [.isRegularFileKey],
+                options: [.skipsHiddenFiles]
+            ) else {
+                return []
+            }
+            return enumerator.allObjects.compactMap { $0 as? URL }
+        }.value
+
+        for fileURL in allURLs {
             let ext = fileURL.pathExtension.lowercased()
             guard validExtensions.contains(ext) else {
                 continue
@@ -192,7 +205,10 @@ class FileImporter {
             return metadata
         }
 
-        for case let fileURL as URL in enumerator {
+        // Collect all URLs to avoid iteration warnings
+        let allURLs = enumerator.allObjects.compactMap { $0 as? URL }
+
+        for fileURL in allURLs {
             let fileName = fileURL.lastPathComponent
 
             // Only process _index.md files

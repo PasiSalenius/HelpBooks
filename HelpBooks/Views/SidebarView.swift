@@ -4,10 +4,12 @@ import UniformTypeIdentifiers
 struct SidebarView: View {
     let fileTree: FileTreeNode?
     let assets: [AssetReference]
-    @Binding var selectedDocumentId: UUID?
-    @Binding var selectedAssetId: UUID?
+    @Binding var selectedDocumentIds: Set<UUID>
+    @Binding var selectedAssetIds: Set<UUID>
     var onDropContentFolder: ((URL) -> Void)?
     var onDropAssetsFolder: ((URL) -> Void)?
+    var onDeleteDocuments: ((Set<UUID>) -> Void)?
+    var onDeleteAssets: ((Set<UUID>) -> Void)?
 
     @State private var dividerPosition: CGFloat = 0.6 // 60% for content, 40% for assets
 
@@ -17,8 +19,9 @@ struct SidebarView: View {
                 // Content section (top)
                 ContentSectionView(
                     fileTree: fileTree,
-                    selectedDocumentId: $selectedDocumentId,
-                    onDropFolder: onDropContentFolder
+                    selectedDocumentIds: $selectedDocumentIds,
+                    onDropFolder: onDropContentFolder,
+                    onDelete: onDeleteDocuments
                 )
                 .frame(height: geometry.size.height * dividerPosition)
 
@@ -42,8 +45,9 @@ struct SidebarView: View {
                 // Assets section (bottom)
                 AssetsSectionView(
                     assets: assets,
-                    selectedAssetId: $selectedAssetId,
-                    onDropFolder: onDropAssetsFolder
+                    selectedAssetIds: $selectedAssetIds,
+                    onDropFolder: onDropAssetsFolder,
+                    onDelete: onDeleteAssets
                 )
                 .frame(height: geometry.size.height * (1 - dividerPosition))
             }
@@ -54,10 +58,12 @@ struct SidebarView: View {
 
 struct ContentSectionView: View {
     let fileTree: FileTreeNode?
-    @Binding var selectedDocumentId: UUID?
+    @Binding var selectedDocumentIds: Set<UUID>
     var onDropFolder: ((URL) -> Void)?
+    var onDelete: ((Set<UUID>) -> Void)?
 
     @State private var isDropTargeted = false
+    @FocusState private var isFocused: Bool
 
     var body: some View {
         VStack(spacing: 0) {
@@ -66,16 +72,21 @@ struct ContentSectionView: View {
                 Text("Content")
                     .font(.headline)
                 Spacer()
+                if !selectedDocumentIds.isEmpty {
+                    Text("\(selectedDocumentIds.count) selected")
+                        .font(.footnote)
+                        .foregroundColor(.secondary)
+                }
             }
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
             .background(Color(nsColor: .controlBackgroundColor))
 
             // File tree
-            List(selection: $selectedDocumentId) {
+            List(selection: $selectedDocumentIds) {
                 if let tree = fileTree {
                     ForEach(tree.children ?? []) { node in
-                        FileTreeNodeView(node: node, selectedId: $selectedDocumentId)
+                        FileTreeNodeView(node: node, selectedIds: $selectedDocumentIds)
                     }
                 } else {
                     Text("No content imported")
@@ -84,11 +95,42 @@ struct ContentSectionView: View {
                 }
             }
             .listStyle(.sidebar)
-            .onChange(of: selectedDocumentId) { oldValue, newValue in
-                print("Selection changed from \(oldValue?.uuidString ?? "nil") to \(newValue?.uuidString ?? "nil")")
+            .focused($isFocused)
+            .onDeleteCommand {
+                if !selectedDocumentIds.isEmpty {
+                    onDelete?(selectedDocumentIds)
+                    selectedDocumentIds = []
+                }
             }
-            .onDrop(of: [.fileURL], isTargeted: $isDropTargeted) { providers in
-                handleDrop(providers)
+            .contextMenu(forSelectionType: UUID.self) { items in
+                if !items.isEmpty {
+                    Button("Delete", role: .destructive) {
+                        onDelete?(Set(items))
+                        selectedDocumentIds.subtract(items)
+                    }
+                }
+            }
+            .onChange(of: selectedDocumentIds) { oldValue, newValue in
+                print("Selection changed from \(oldValue.count) to \(newValue.count) documents")
+            }
+            .onDrop(of: [.fileURL], isTargeted: $isDropTargeted) { providers -> Bool in
+                guard !providers.isEmpty else { return false }
+
+                // Process each dropped item
+                for provider in providers {
+                    provider.loadItem(forTypeIdentifier: UTType.fileURL.identifier) { item, error in
+                        guard let data = item as? Data,
+                              let url = URL(dataRepresentation: data, relativeTo: nil) else {
+                            return
+                        }
+
+                        DispatchQueue.main.async {
+                            onDropFolder?(url)
+                        }
+                    }
+                }
+
+                return true
             }
             .overlay {
                 if isDropTargeted {
@@ -99,33 +141,21 @@ struct ContentSectionView: View {
                 }
             }
         }
-    }
-
-    private func handleDrop(_ providers: [NSItemProvider]) -> Bool {
-        guard let provider = providers.first else { return false }
-
-        provider.loadItem(forTypeIdentifier: UTType.fileURL.identifier) { item, error in
-            guard let data = item as? Data,
-                  let url = URL(dataRepresentation: data, relativeTo: nil) else {
-                return
-            }
-
-            DispatchQueue.main.async {
-                onDropFolder?(url)
-            }
+        .onAppear {
+            isFocused = true
         }
-
-        return true
     }
 }
 
 struct AssetsSectionView: View {
     let assets: [AssetReference]
-    @Binding var selectedAssetId: UUID?
+    @Binding var selectedAssetIds: Set<UUID>
     var onDropFolder: ((URL) -> Void)?
+    var onDelete: ((Set<UUID>) -> Void)?
 
     @State private var isDropTargeted = false
     @State private var expandedTypes: Set<AssetReference.AssetType> = [.image]
+    @FocusState private var isFocused: Bool
 
     var body: some View {
         VStack(spacing: 0) {
@@ -134,16 +164,22 @@ struct AssetsSectionView: View {
                 Text("Assets")
                     .font(.headline)
                 Spacer()
-                Text("\(assets.count)")
-                    .font(.footnote)
-                    .foregroundColor(.secondary)
+                if !selectedAssetIds.isEmpty {
+                    Text("\(selectedAssetIds.count) selected")
+                        .font(.footnote)
+                        .foregroundColor(.secondary)
+                } else {
+                    Text("\(assets.count)")
+                        .font(.footnote)
+                        .foregroundColor(.secondary)
+                }
             }
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
             .background(Color(nsColor: .controlBackgroundColor))
 
             // Assets list
-            List(selection: $selectedAssetId) {
+            List(selection: $selectedAssetIds) {
                 if assets.isEmpty {
                     Text("No assets imported")
                         .foregroundColor(.secondary)
@@ -162,7 +198,7 @@ struct AssetsSectionView: View {
                                 }
                             )
                         ) {
-                            ForEach(typeAssets) { asset in
+                            ForEach(typeAssets.sorted(by: { $0.fileName.localizedCaseInsensitiveCompare($1.fileName) == .orderedAscending })) { asset in
                                 Label(asset.fileName, systemImage: assetType.systemImage)
                                     .font(.body)
                                     .tag(asset.id)
@@ -174,8 +210,39 @@ struct AssetsSectionView: View {
                 }
             }
             .listStyle(.sidebar)
-            .onDrop(of: [.fileURL], isTargeted: $isDropTargeted) { providers in
-                handleDrop(providers)
+            .focused($isFocused)
+            .onDeleteCommand {
+                if !selectedAssetIds.isEmpty {
+                    onDelete?(selectedAssetIds)
+                    selectedAssetIds = []
+                }
+            }
+            .contextMenu(forSelectionType: UUID.self) { items in
+                if !items.isEmpty {
+                    Button("Delete", role: .destructive) {
+                        onDelete?(Set(items))
+                        selectedAssetIds.subtract(items)
+                    }
+                }
+            }
+            .onDrop(of: [.fileURL], isTargeted: $isDropTargeted) { providers -> Bool in
+                guard !providers.isEmpty else { return false }
+
+                // Process each dropped item
+                for provider in providers {
+                    provider.loadItem(forTypeIdentifier: UTType.fileURL.identifier) { item, error in
+                        guard let data = item as? Data,
+                              let url = URL(dataRepresentation: data, relativeTo: nil) else {
+                            return
+                        }
+
+                        DispatchQueue.main.async {
+                            onDropFolder?(url)
+                        }
+                    }
+                }
+
+                return true
             }
             .overlay {
                 if isDropTargeted {
@@ -190,23 +257,6 @@ struct AssetsSectionView: View {
 
     private var groupedAssets: [AssetReference.AssetType: [AssetReference]] {
         Dictionary(grouping: assets, by: \.type)
-    }
-
-    private func handleDrop(_ providers: [NSItemProvider]) -> Bool {
-        guard let provider = providers.first else { return false }
-
-        provider.loadItem(forTypeIdentifier: UTType.fileURL.identifier) { item, error in
-            guard let data = item as? Data,
-                  let url = URL(dataRepresentation: data, relativeTo: nil) else {
-                return
-            }
-
-            DispatchQueue.main.async {
-                onDropFolder?(url)
-            }
-        }
-
-        return true
     }
 }
 
@@ -225,7 +275,7 @@ extension View {
 
 struct FileTreeNodeView: View {
     let node: FileTreeNode
-    @Binding var selectedId: UUID?
+    @Binding var selectedIds: Set<UUID>
     @State private var isExpanded = true
 
     var body: some View {
@@ -233,23 +283,18 @@ struct FileTreeNodeView: View {
             DisclosureGroup(isExpanded: $isExpanded) {
                 if let children = node.children {
                     ForEach(children) { child in
-                        FileTreeNodeView(node: child, selectedId: $selectedId)
+                        FileTreeNodeView(node: child, selectedIds: $selectedIds)
                     }
                 }
             } label: {
                 Label(node.name, systemImage: "folder")
                     .foregroundColor(.primary)
+                    .tag(node.id)
             }
         } else {
             if let docId = node.documentId {
-                Button {
-                    selectedId = docId
-                    print("Button clicked for: \(node.name), ID: \(docId)")
-                } label: {
-                    Label(node.name, systemImage: "doc.text")
-                }
-                .buttonStyle(.plain)
-                .tag(docId)
+                Label(node.name, systemImage: "doc.text")
+                    .tag(docId)
             }
         }
     }

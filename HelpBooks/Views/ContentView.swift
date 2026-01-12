@@ -3,14 +3,14 @@ import UniformTypeIdentifiers
 
 struct ContentView: View {
     @State private var viewModel = ProjectViewModel()
-    @State private var selectedDocumentId: UUID?
-    @State private var selectedAssetId: UUID?
+    @State private var selectedDocumentIds: Set<UUID> = []
+    @State private var selectedAssetIds: Set<UUID> = []
     @State private var showingMetadataEditor = false
     @State private var showingExport = false
     @State private var columnVisibility: NavigationSplitViewVisibility = .all
 
     var selectedDocument: MarkdownDocument? {
-        guard let id = selectedDocumentId else {
+        guard let id = selectedDocumentIds.first else {
             print("No selectedDocumentId")
             return nil
         }
@@ -20,7 +20,7 @@ struct ContentView: View {
     }
 
     var selectedAsset: AssetReference? {
-        guard let id = selectedAssetId else { return nil }
+        guard let id = selectedAssetIds.first else { return nil }
         return viewModel.project?.assets.first { $0.id == id }
     }
 
@@ -30,13 +30,15 @@ struct ContentView: View {
                 SidebarView(
                     fileTree: project.fileTree,
                     assets: project.assets,
-                    selectedDocumentId: $selectedDocumentId,
-                    selectedAssetId: $selectedAssetId,
+                    selectedDocumentIds: $selectedDocumentIds,
+                    selectedAssetIds: $selectedAssetIds,
                     onDropContentFolder: { url in
                         // Re-import content folder
                         viewModel.importContentAndAssets(contentURL: url, assetsURL: nil)
                     },
-                    onDropAssetsFolder: viewModel.addAssetsFromFolder
+                    onDropAssetsFolder: viewModel.addAssetsFromFolder,
+                    onDeleteDocuments: viewModel.deleteDocuments,
+                    onDeleteAssets: viewModel.deleteAssets
                 )
             } else {
                 Text("No Project")
@@ -71,23 +73,18 @@ struct ContentView: View {
             ToolbarItemGroup {
                 if let project = viewModel.project {
                     // Style picker
-                    Menu {
-                        Picker("Style", selection: Binding(
-                            get: { project.metadata.theme },
-                            set: { newTheme in
-                                project.metadata.theme = newTheme
-                                project.metadata.saveToUserDefaults()
-                            }
-                        )) {
-                            ForEach(HelpBookTheme.allCases, id: \.self) { theme in
-                                Text(theme.displayName).tag(theme)
-                            }
+                    Picker("", selection: Binding(
+                        get: { project.metadata.theme },
+                        set: { newTheme in
+                            project.metadata.theme = newTheme
+                            project.metadata.saveToUserDefaults()
                         }
-                        .pickerStyle(.inline)
-                    } label: {
-                        Text(project.metadata.theme.displayName)
+                    )) {
+                        ForEach(HelpBookTheme.allCases, id: \.self) { theme in
+                            Text(theme.displayName).tag(theme)
+                        }
                     }
-                    .menuIndicator(.visible)
+                    .pickerStyle(.menu)
 
                     Button {
                         showingMetadataEditor = true
@@ -145,14 +142,14 @@ struct ContentView: View {
                 Text(error)
             }
         }
-        .onChange(of: selectedDocumentId) { _, newValue in
-            if newValue != nil {
-                selectedAssetId = nil
+        .onChange(of: selectedDocumentIds) { _, newValue in
+            if !newValue.isEmpty {
+                selectedAssetIds = []
             }
         }
-        .onChange(of: selectedAssetId) { _, newValue in
-            if newValue != nil {
-                selectedDocumentId = nil
+        .onChange(of: selectedAssetIds) { _, newValue in
+            if !newValue.isEmpty {
+                selectedDocumentIds = []
             }
         }
     }

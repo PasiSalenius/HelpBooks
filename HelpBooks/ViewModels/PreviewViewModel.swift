@@ -33,8 +33,9 @@ class PreviewViewModel {
                         continue
                     }
 
-                    // Convert to asset:// scheme
-                    let assetPath = "asset://\(path)"
+                    // Convert to asset:// scheme with proper URL encoding for spaces and special characters
+                    let encodedPath = path.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? path
+                    let assetPath = "asset://\(encodedPath)"
 
                     if let range = Range(pathRange, in: fixed) {
                         fixed.replaceSubrange(range, with: assetPath)

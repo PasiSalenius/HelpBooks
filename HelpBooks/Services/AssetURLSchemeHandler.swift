@@ -39,23 +39,35 @@ class AssetURLSchemeHandler: NSObject, WKURLSchemeHandler {
     }
 
     private func findAsset(forPath path: String) -> AssetReference? {
+        // URL.path automatically percent-decodes the path, so spaces are already decoded
         // Remove leading slash if present
         let cleanPath = path.hasPrefix("/") ? String(path.dropFirst()) : path
 
+        print("🔍 Looking for asset with path: '\(cleanPath)'")
+
         // Try to find by relative path
         if let asset = assets.first(where: { $0.relativePath == cleanPath }) {
+            print("✅ Found by relative path: \(asset.fileName)")
             return asset
         }
 
         // Try to find by filename
         let filename = (cleanPath as NSString).lastPathComponent
+        print("🔍 Trying filename match: '\(filename)'")
         if let asset = assets.first(where: { $0.fileName == filename }) {
+            print("✅ Found by filename: \(asset.fileName)")
             return asset
         }
 
         // Try to find by matching end of path
         if let asset = assets.first(where: { $0.relativePath.hasSuffix(cleanPath) }) {
+            print("✅ Found by suffix match: \(asset.fileName)")
             return asset
+        }
+
+        print("❌ Asset not found. Available assets:")
+        for asset in assets.prefix(10) {
+            print("   - \(asset.relativePath)")
         }
 
         return nil

@@ -38,7 +38,7 @@ class HTMLGenerator {
         do {
             // Parse the HTML content with just the markdown-generated HTML
             let tempDoc = try SwiftSoup.parse(htmlBody)
-            let tempBody = try tempDoc.body() ?? tempDoc
+            let tempBody = tempDoc.body() ?? tempDoc
 
             // Create a clean document structure
             let doc = Document("")
@@ -174,13 +174,13 @@ class HTMLGenerator {
 
     private func ensureTitleHeading(in body: Element, title: String, subtitle: String?) throws {
         // Check if the first element is an H1
-        let firstChild = try body.children().first()
+        let firstChild = body.children().first()
 
-        if let first = firstChild, try first.tagName() == "h1" {
+        if let first = firstChild, first.tagName() == "h1" {
             // H1 already exists
             // Check if we need to add subtitle after it
             if let subtitle = subtitle {
-                let subtitleP = try Element(Tag("p"), "")
+                let subtitleP = Element(Tag("p"), "")
                 try subtitleP.addClass("subtitle")
                 try subtitleP.text(subtitle)
                 try first.after(subtitleP.outerHtml())
@@ -189,13 +189,13 @@ class HTMLGenerator {
         }
 
         // No H1 at the top, insert one
-        let h1 = try Element(Tag("h1"), "")
+        let h1 = Element(Tag("h1"), "")
         try h1.text(title)
         try body.prependChild(h1)
 
         // Add subtitle if present
         if let subtitle = subtitle {
-            let subtitleP = try Element(Tag("p"), "")
+            let subtitleP = Element(Tag("p"), "")
             try subtitleP.addClass("subtitle")
             try subtitleP.text(subtitle)
             try h1.after(subtitleP.outerHtml())
@@ -232,7 +232,7 @@ class HTMLGenerator {
             let anchorName = sanitizeAnchorName(text)
 
             // Create anchor element
-            let anchor = try Element(Tag("a"), "")
+            let anchor = Element(Tag("a"), "")
             try anchor.attr("name", anchorName)
 
             // Insert before heading

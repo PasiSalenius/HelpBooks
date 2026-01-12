@@ -50,34 +50,85 @@ class HelpBooksCLI {
         print("Creating configuration file at: \(configPath)")
         print("")
 
+        // Try to load existing config to get defaults
+        let existingConfig = try? CLIConfig.load(from: configPath)
+
         // Interactive wizard
         print("Help Book Configuration")
         print("======================")
         print("")
+        print("Press Enter to keep the previous value (shown in brackets)")
+        print("")
 
-        let bundleId = prompt("Bundle Identifier (e.g., com.example.MyApp.help): ")
-        let bundleName = prompt("Bundle Name (e.g., MyApp): ")
-        let helpBookTitle = prompt("Help Book Title (e.g., MyApp Help): ")
-        let contentPath = prompt("Content folder path: ")
-        let assetsPath = prompt("Assets folder path (optional): ")
-        let outputPath = prompt("Output folder path: ")
+        let bundleId = promptWithDefault(
+            "Bundle Identifier (e.g., com.example.MyApp.help): ",
+            defaultValue: existingConfig?.bundleIdentifier
+        )
+        let bundleName = promptWithDefault(
+            "Bundle Name (e.g., MyApp): ",
+            defaultValue: existingConfig?.bundleName
+        )
+        let helpBookTitle = promptWithDefault(
+            "Help Book Title (e.g., MyApp Help): ",
+            defaultValue: existingConfig?.helpBookTitle
+        )
+        let contentPath = promptWithDefault(
+            "Content folder path: ",
+            defaultValue: existingConfig?.contentPath
+        )
+        let assetsPath = promptWithDefault(
+            "Assets folder path (optional): ",
+            defaultValue: existingConfig?.assetsPath
+        )
+        let outputPath = promptWithDefault(
+            "Output folder path: ",
+            defaultValue: existingConfig?.outputPath
+        )
 
         print("")
         print("Theme Selection:")
         print("1. Modern (current macOS design)")
         print("2. Mavericks (OS X 10.9 style)")
         print("3. Tiger (OS X 10.4 style)")
-        let themeChoice = prompt("Choose theme (1-3, default: 1): ")
+        print("4. Custom (use custom CSS file)")
+
+        let defaultThemeChoice: String?
+        if let existingTheme = existingConfig?.theme {
+            switch existingTheme {
+            case "Mavericks": defaultThemeChoice = "2"
+            case "Tiger": defaultThemeChoice = "3"
+            case "Custom": defaultThemeChoice = "4"
+            default: defaultThemeChoice = "1"
+            }
+        } else {
+            defaultThemeChoice = nil
+        }
+
+        let themeChoice = promptWithDefault(
+            "Choose theme (1-4, default: 1): ",
+            defaultValue: defaultThemeChoice
+        )
 
         let theme: String?
+        let customCssPath: String?
 
         switch themeChoice {
         case "2":
             theme = "Mavericks"
+            customCssPath = nil
         case "3":
             theme = "Tiger"
+            customCssPath = nil
+        case "4":
+            theme = "Custom"
+            print("")
+            customCssPath = promptWithDefault(
+                "Custom CSS file path: ",
+                defaultValue: existingConfig?.customCssPath
+            )
         default:
             theme = "Modern"
+            customCssPath = nil
         }
 
         let config = CLIConfig(
@@ -87,10 +138,11 @@ class HelpBooksCLI {
             contentPath: contentPath,
             assetsPath: assetsPath.isEmpty ? nil : assetsPath,
             outputPath: outputPath,
-            bundleVersion: "1.0",
-            bundleShortVersionString: "1.0",
-            developmentRegion: "en",
-            theme: theme
+            bundleVersion: existingConfig?.bundleVersion ?? "1.0",
+            bundleShortVersionString: existingConfig?.bundleShortVersionString ?? "1.0",
+            developmentRegion: existingConfig?.developmentRegion ?? "en",
+            theme: theme,
+            customCssPath: customCssPath
         )
 
         try config.save(to: configPath)
@@ -107,6 +159,7 @@ class HelpBooksCLI {
         var contentPath: String?
         var assetsPath: String?
         var outputPath: String?
+        var customCssPath: String?
 
         var i = 0
         while i < args.count {
@@ -137,6 +190,12 @@ class HelpBooksCLI {
                 }
                 outputPath = args[i + 1]
                 i += 2
+            case "--custom-css":
+                guard i + 1 < args.count else {
+                    throw CLIError.invalidArguments("Missing value for \(arg)")
+                }
+                customCssPath = args[i + 1]
+                i += 2
             default:
                 throw CLIError.invalidArguments("Unknown option: \(arg)")
             }
@@ -149,11 +208,15 @@ class HelpBooksCLI {
         let finalContentPath = contentPath ?? config.contentPath
         let finalAssetsPath = assetsPath ?? config.assetsPath
         let finalOutputPath = outputPath ?? config.outputPath
+        let finalCustomCssPath = customCssPath ?? config.customCssPath
 
         print("Building Help Book...")
         print("Content: \(finalContentPath)")
         if let assets = finalAssetsPath {
             print("Assets: \(assets)")
+        }
+        if let customCss = finalCustomCssPath {
+            print("Custom CSS: \(customCss)")
         }
         print("Output: \(finalOutputPath)")
         print("")
@@ -163,7 +226,8 @@ class HelpBooksCLI {
             config: config,
             contentPath: finalContentPath,
             assetsPath: finalAssetsPath,
-            outputPath: finalOutputPath
+            outputPath: finalOutputPath,
+            customCssPath: finalCustomCssPath
         )
 
         print("")
@@ -175,7 +239,8 @@ class HelpBooksCLI {
         config: CLIConfig,
         contentPath: String,
         assetsPath: String?,
-        outputPath: String
+        outputPath: String,
+        customCssPath: String?
     ) async throws {
         // Import content and assets
         let contentURL = URL(fileURLWithPath: contentPath)
@@ -191,6 +256,28 @@ class HelpBooksCLI {
             let additionalAssets = try await importer.scanAssets(at: assetsURL, referencedBy: project.documents)
             print("Found \(additionalAssets.count) assets in separate folder")
             project.assets.append(contentsOf: additionalAssets)
+        }
+
+        // If custom CSS is specified, add it as an asset
+        if let customCssPath = customCssPath {
+            let cssURL = URL(fileURLWithPath: customCssPath)
+
+            // Verify the file exists
+            guard FileManager.default.fileExists(atPath: cssURL.path) else {
+                throw CLIError.buildFailed("Custom CSS file not found: \(customCssPath)")
+            }
+
+            // Create asset reference with the file name "style.css" so it replaces the default
+            let cssAsset = AssetReference(
+                originalPath: cssURL,
+                relativePath: "style.css",
+                type: .css
+            )
+
+            // Remove any existing CSS assets and add the custom one
+            project.assets.removeAll { $0.type == .css }
+            project.assets.append(cssAsset)
+            print("Using custom CSS: \(customCssPath)")
         }
 
         // Set metadata
@@ -216,6 +303,17 @@ class HelpBooksCLI {
         return readLine() ?? ""
     }
 
+    private func promptWithDefault(_ message: String, defaultValue: String?) -> String {
+        if let defaultValue = defaultValue {
+            print("\(message)[\(defaultValue)] ", terminator: "")
+            let input = readLine() ?? ""
+            return input.isEmpty ? defaultValue : input
+        } else {
+            print(message, terminator: "")
+            return readLine() ?? ""
+        }
+    }
+
     private func printUsage() {
         print("""
         HelpBooks CLI - Help Book Generator
@@ -236,6 +334,7 @@ class HelpBooksCLI {
             -c, --config <path>     Path to config file (default: helpbooks.json)
             --content <path>        Override content folder path
             --assets <path>         Override assets folder path
+            --custom-css <path>     Override with custom CSS file (replaces theme)
             -o, --output <path>     Override output folder path
 
         EXAMPLES:
@@ -247,6 +346,9 @@ class HelpBooksCLI {
 
             # Generate with custom paths
             helpbooks generate --content ./docs --output ./build
+
+            # Generate with custom CSS
+            helpbooks generate --custom-css ./mystyle.css
 
             # Use custom config file
             helpbooks generate -c myconfig.json

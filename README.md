@@ -1,23 +1,27 @@
 # HelpBooks
 
-A native macOS application and command-line tool for creating Apple Help Books from [Lotus Docs](https://lotusdocs.dev/) content. Transform your Lotus Docs documentation into native macOS Help Books with a modern, SwiftUI-based interface.
+A native macOS application and command-line tool for creating Apple Help Books from [Hugo](https://gohugo.io/) documentation. Transform your Hugo-based documentation into native macOS Help Books with a modern, SwiftUI-based interface.
 
 ## Features
 
-- 📝 **Lotus Docs Compatible** - Designed specifically for Lotus Docs content structure and features
+- 📝 **Hugo Compatible** - Works with Hugo's frontmatter format and content structure
 - 🎨 **Live Preview** - See your help content rendered in real-time with full dark mode support
 - 📁 **Hugo-style Organization** - Supports content organization with `_index.md` files for sections
 - 🔍 **Search Integration** - Automatically generates search indexes for macOS Help Viewer
 - 🎯 **Weight-based Ordering** - Control the order of pages and sections using frontmatter weights
-- 🖼️ **Asset Management** - Import and manage images, CSS, and other assets
+- 🖼️ **Asset Management** - Import and manage images, CSS, and other assets via drag-and-drop
 - 🚀 **Export Ready** - Generates complete `.help` bundles ready to add to your Xcode project
 - 🌓 **Dark Mode Support** - Full support for macOS light and dark appearances
 - 🎨 **Multiple Themes** - Choose from Modern, Mavericks, or Tiger styling
-- ⚡ **Lotus Docs Shortcodes** - Full support for Lotus Docs alert boxes and other shortcodes
+- ⚡ **Lotus Docs Alert Boxes** - Support for [Lotus Docs](https://lotusdocs.dev/) style alert shortcodes
 
 ## Screenshots
 
+### Author tool
+
 ![HelpBooks App Interface](screenshot-helpbooks.png)
+
+### Help Book in Modern style
 
 ![Exported Help Book](screenshot-export.png)
 
@@ -42,14 +46,15 @@ The built application will be in `.build/release/HelpBooks`.
 
 ### HelpBooks GUI App
 
-1. **Import Content**
+1. **Import Hugo Content**
    - Launch the HelpBooks app
-   - Drag and drop your content folder (containing `.md` files)
-   - Optionally add an assets folder with images and other resources
+   - Drag and drop your Hugo content folder (containing `.md` files with YAML frontmatter)
+   - Optionally drag and drop an assets folder with images and other resources to the Assets section
 
 2. **Preview & Edit**
    - Browse your content in the sidebar
    - Preview pages with live rendering
+   - Select different themes from the Style menu
    - Edit metadata in the Metadata Editor
 
 3. **Export**
@@ -59,7 +64,7 @@ The built application will be in `.build/release/HelpBooks`.
 
 ### Content Structure
 
-HelpBooks expects your content to follow this structure:
+HelpBooks expects your Hugo content to follow this structure:
 
 ```
 content/
@@ -75,9 +80,9 @@ content/
 └── overview.md
 ```
 
-### Frontmatter
+### Frontmatter (Hugo Format)
 
-Each Markdown file should include YAML frontmatter:
+Each Markdown file should include YAML frontmatter in Hugo's format:
 
 ```yaml
 ---
@@ -114,9 +119,9 @@ description: "Complete guide to using the application."
 
 Files starting with underscore are not included as separate pages, only their metadata is used.
 
-### Shortcodes
+### Shortcodes (Lotus Docs Alert Boxes)
 
-HelpBooks supports alert boxes using shortcode syntax:
+HelpBooks supports [Lotus Docs](https://lotusdocs.dev/) style alert boxes using Hugo shortcode syntax:
 
 ```markdown
 {{< alert icon="ℹ️" context="info" text="This is an informational alert." />}}
@@ -125,6 +130,8 @@ HelpBooks supports alert boxes using shortcode syntax:
 ```
 
 **Supported contexts:** `info`, `primary`, `warning`, `danger`, `success`, `light`, `dark`
+
+These alert boxes are compatible with Lotus Docs theme syntax, making it easy to maintain documentation that works both as a Hugo site and as macOS Help.
 
 ## Themes and Styling
 
@@ -200,6 +207,9 @@ The CLI tool provides automation capabilities:
 # Create a configuration file interactively
 helpbooks config
 
+# Edit an existing configuration (keeps previous values as defaults)
+helpbooks config
+
 # Generate Help Book from configuration
 helpbooks generate
 
@@ -228,6 +238,7 @@ GENERATE OPTIONS:
   -c, --config <path>     Path to config file (default: helpbooks.json)
   --content <path>        Override content folder path
   --assets <path>         Override assets folder path
+  --custom-css <path>     Override with custom CSS file (replaces theme)
   -o, --output <path>     Override output folder path
 ```
 
@@ -243,7 +254,8 @@ The `helpbooks.json` configuration file supports the following fields:
   "contentDirectory": "./content",
   "assetsDirectory": "./assets",
   "outputDirectory": "./build",
-  "theme": "modern"
+  "theme": "modern",
+  "customCssPath": "./custom-style.css"
 }
 ```
 
@@ -255,9 +267,37 @@ The `helpbooks.json` configuration file supports the following fields:
 - `contentDirectory` - Path to folder containing Markdown files
 - `assetsDirectory` - Path to folder containing images and other assets (optional)
 - `outputDirectory` - Path where the `.help` bundle will be generated
-- `theme` - Visual theme for the help book: `modern`, `mavericks`, or `tiger` (default: `modern`)
+- `theme` - Visual theme for the help book: `Modern`, `Mavericks`, `Tiger`, or `Custom` (default: `Modern`)
+- `customCssPath` - Path to a custom CSS file (required when theme is `Custom`)
 
-Run `helpbooks config` to create a configuration file interactively.
+**Interactive Configuration:**
+
+Run `helpbooks config` to create or update a configuration file interactively. The wizard will:
+- Show previous values in brackets (e.g., `[./content]`)
+- Press Enter to keep the previous value
+- Offer theme options including "Custom" for custom CSS
+- Only prompt for CSS file path when "Custom" theme is selected
+
+### Custom CSS Styling
+
+You can completely customize the appearance of your Help Book by providing your own CSS file:
+
+**Using the CLI:**
+```bash
+# In your config file - set theme to "Custom"
+{
+  "theme": "Custom",
+  "customCssPath": "./my-custom-styles.css"
+}
+
+# Or via command line
+helpbooks generate --custom-css ./my-custom-styles.css
+
+# Or use the interactive wizard - choose option 4 for Custom theme
+helpbooks config
+```
+
+When theme is set to `Custom` or a custom CSS file is specified via command line, it completely replaces the built-in theme CSS, giving you full control over the styling. Your CSS file will be copied to the Help Book bundle as `style.css`.
 
 ## Project Architecture
 
@@ -326,6 +366,8 @@ SOFTWARE.
 ## Resources
 
 - [Apple Help Programming Guide](https://developer.apple.com/library/archive/documentation/Carbon/Conceptual/ProvidingUserAssitAppleHelp/)
+- [Hugo Documentation](https://gohugo.io/documentation/)
+- [Lotus Docs Theme](https://lotusdocs.dev/) (for alert box syntax)
 - [Markdown Guide](https://www.markdownguide.org/)
 - [YAML Specification](https://yaml.org/)
 
