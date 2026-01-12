@@ -17,11 +17,11 @@ A native macOS application and command-line tool for creating Apple Help Books f
 
 ## Screenshots
 
-### Author tool
+### Preview tool
 
 ![HelpBooks App Interface](screenshot-helpbooks.png)
 
-### Help Book in Modern style
+### Help Book in Maverics theme
 
 ![Exported Help Book](screenshot-export.png)
 
