@@ -95,7 +95,7 @@ class SidebarGenerator {
         return html
     }
 
-    /// Generates JavaScript for sidebar functionality and Help Viewer integration
+    /// Generates JavaScript for sidebar functionality
     func generateSidebarJavaScript() -> String {
         """
         <script>
@@ -113,50 +113,6 @@ class SidebarGenerator {
             }
 
             content.style.display = isExpanded ? 'none' : 'block';
-        }
-
-        // Sidebar visibility state
-        var sidebarVisible = true;
-
-        // Show sidebar
-        function showNavigation() {
-            const sidebar = document.getElementById('help-sidebar');
-            const main = document.getElementById('help-main-content');
-
-            if (!sidebar) return;
-
-            sidebar.style.display = 'block';
-            if (main) main.classList.add('with-sidebar');
-            sidebarVisible = true;
-        }
-
-        // Hide sidebar
-        function hideNavigation() {
-            const sidebar = document.getElementById('help-sidebar');
-            const main = document.getElementById('help-main-content');
-
-            if (!sidebar) return;
-
-            sidebar.style.display = 'none';
-            if (main) main.classList.remove('with-sidebar');
-            sidebarVisible = false;
-        }
-
-        // Toggle sidebar visibility
-        function toggleNavigation() {
-            if (sidebarVisible) {
-                hideNavigation();
-            } else {
-                showNavigation();
-            }
-        }
-
-        // Integrate with Help Viewer native TOC button
-        if ('HelpViewer' in window && 'showTOCButton' in window.HelpViewer) {
-            window.setTimeout(function() {
-                window.HelpViewer.showTOCButton(true, showNavigation, hideNavigation);
-                window.HelpViewer.setTOCButton(true);
-            }, 100);
         }
         </script>
         """

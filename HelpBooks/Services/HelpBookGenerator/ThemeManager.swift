@@ -36,6 +36,15 @@ class ThemeManager {
         """
         /* HelpAuthor Modern Help Book Stylesheet */
 
+        html, body {
+            overflow-x: hidden;
+            max-width: 100%;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             line-height: 1.6;
@@ -43,6 +52,23 @@ class ThemeManager {
             background: #ffffff;
             padding: 0;
             margin: 0;
+        }
+
+        img, video, iframe, embed, object {
+            max-width: 100%;
+            height: auto;
+        }
+
+        pre, code {
+            max-width: 100%;
+            overflow-x: auto;
+            word-wrap: break-word;
+        }
+
+        table {
+            max-width: 100%;
+            overflow-x: auto;
+            display: block;
         }
 
         @media (prefers-color-scheme: dark) {
@@ -570,6 +596,15 @@ class ThemeManager {
         """
         /* HelpAuthor Mavericks Help Book Stylesheet (OS X 10.9 Style) */
 
+        html, body {
+            overflow-x: hidden;
+            max-width: 100%;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
         body {
             font-family: "Lucida Grande", "Helvetica Neue", Helvetica, Arial, sans-serif;
             font-size: 13px;
@@ -578,6 +613,23 @@ class ThemeManager {
             background: #ffffff;
             padding: 0;
             margin: 0;
+        }
+
+        img, video, iframe, embed, object {
+            max-width: 100%;
+            height: auto;
+        }
+
+        pre, code {
+            max-width: 100%;
+            overflow-x: auto;
+            word-wrap: break-word;
+        }
+
+        table {
+            max-width: 100%;
+            overflow-x: auto;
+            display: block;
         }
 
         /* Sidebar Navigation */
@@ -1100,6 +1152,15 @@ class ThemeManager {
         """
         /* HelpAuthor Tiger Help Book Stylesheet (OS X 10.4 Style) */
 
+        html, body {
+            overflow-x: hidden;
+            max-width: 100%;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
         body {
             font-family: Geneva, "Lucida Grande", Helvetica, Arial, sans-serif;
             font-size: 12px;
@@ -1108,6 +1169,23 @@ class ThemeManager {
             background: #ffffff;
             padding: 0;
             margin: 0;
+        }
+
+        img, video, iframe, embed, object {
+            max-width: 100%;
+            height: auto;
+        }
+
+        pre, code {
+            max-width: 100%;
+            overflow-x: auto;
+            word-wrap: break-word;
+        }
+
+        table {
+            max-width: 100%;
+            overflow-x: auto;
+            display: block;
         }
 
         /* Sidebar Navigation */
