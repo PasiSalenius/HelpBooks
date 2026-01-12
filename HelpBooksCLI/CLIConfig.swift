@@ -12,6 +12,7 @@ struct CLIConfig: Codable {
     var developmentRegion: String
     var theme: String?
     var customCssPath: String?
+    var baseURL: String?
 
     func save(to path: String) throws {
         let encoder = JSONEncoder()

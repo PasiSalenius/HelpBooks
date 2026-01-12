@@ -86,6 +86,12 @@ class HelpBooksCLI {
         )
 
         print("")
+        let baseURL = promptWithDefault(
+            "Base URL to convert to relative links (optional, e.g., https://example.com/docs): ",
+            defaultValue: existingConfig?.baseURL
+        )
+
+        print("")
         print("Theme Selection:")
         print("1. Modern (current macOS design)")
         print("2. Mavericks (OS X 10.9 style)")
@@ -142,7 +148,8 @@ class HelpBooksCLI {
             bundleShortVersionString: existingConfig?.bundleShortVersionString ?? "1.0",
             developmentRegion: existingConfig?.developmentRegion ?? "en",
             theme: theme,
-            customCssPath: customCssPath
+            customCssPath: customCssPath,
+            baseURL: baseURL.isEmpty ? nil : baseURL
         )
 
         try config.save(to: configPath)
@@ -287,6 +294,11 @@ class HelpBooksCLI {
         project.metadata.bundleVersion = config.bundleVersion
         project.metadata.bundleShortVersionString = config.bundleShortVersionString
         project.metadata.developmentRegion = config.developmentRegion
+
+        // Set base URL if specified
+        if let baseURL = config.baseURL {
+            project.metadata.baseURL = baseURL
+        }
 
         // Set theme if specified
         if let themeString = config.theme, let theme = HelpBookTheme(rawValue: themeString) {

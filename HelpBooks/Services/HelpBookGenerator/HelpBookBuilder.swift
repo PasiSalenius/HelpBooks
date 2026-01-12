@@ -55,6 +55,8 @@ class HelpBookBuilder {
     private let bundleBuilder: BundleBuilder
     private let infoPlistGenerator: InfoPlistGenerator
     private let htmlGenerator: HTMLGenerator
+    private let frameGenerator: FrameGenerator
+    private let welcomePageGenerator: WelcomePageGenerator
     private let assetCopier: AssetCopier
     private let assetPathRewriter: AssetPathRewriter
     private let searchIndexer: SearchIndexer
@@ -64,6 +66,8 @@ class HelpBookBuilder {
         self.bundleBuilder = BundleBuilder()
         self.infoPlistGenerator = InfoPlistGenerator()
         self.htmlGenerator = HTMLGenerator()
+        self.frameGenerator = FrameGenerator()
+        self.welcomePageGenerator = WelcomePageGenerator()
         self.assetCopier = AssetCopier()
         self.assetPathRewriter = AssetPathRewriter()
         self.searchIndexer = SearchIndexer()
@@ -81,18 +85,21 @@ class HelpBookBuilder {
         progress = 0.2
         try infoPlistGenerator.generate(metadata: project.metadata, at: bundleURL)
 
-        // Phase 3: Generate HTML files
+        // Phase 3: Generate HTML files (content-only, without sidebar)
         currentPhase = .generatingHTML(current: 0, total: project.documents.count)
         try await generateHTMLFiles(project, bundleURL)
 
-        // Phase 3.5: Generate index.html
-        try generateIndexHTML(project, bundleURL)
+        // Phase 3.5: Generate welcome.html (content-only welcome page)
+        try generateWelcomeHTML(project, bundleURL)
 
-        // Phase 3.6: Generate section index pages
+        // Phase 3.6: Generate index.html (main frame page with sidebar and iframe)
+        try generateFrameHTML(project, bundleURL)
+
+        // Phase 3.7: Generate section index pages
         let sectionIndexGenerator = SectionIndexGenerator()
         try sectionIndexGenerator.generateSectionIndexes(project: project, at: bundleURL)
 
-        // Phase 3.7: Generate Table of Contents
+        // Phase 3.8: Generate Table of Contents
         try tocGenerator.generate(project: project, at: bundleURL)
 
         // Phase 4: Copy assets
@@ -150,108 +157,24 @@ class HelpBookBuilder {
         }
     }
 
-    private func generateIndexHTML(_ project: HelpProject, _ bundleURL: URL) throws {
-        let lprojURL = bundleURL
-            .appendingPathComponent("Contents/Resources/en.lproj")
-        let indexURL = lprojURL.appendingPathComponent("index.html")
+    private func generateWelcomeHTML(_ project: HelpProject, _ bundleURL: URL) throws {
+        let lprojURL = bundleURL.appendingPathComponent("Contents/Resources/en.lproj")
+        let welcomeURL = lprojURL.appendingPathComponent("welcome.html")
 
-        // Generate sidebar for index page
-        let sidebarGenerator = SidebarGenerator()
-        let sidebarHTML = sidebarGenerator.generateSidebar(
-            project: project,
-            currentPath: "index.html"
-        )
-        let sidebarJS = sidebarGenerator.generateSidebarJavaScript()
-
-        // Build HTML content
-        var htmlContent = """
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>\(project.metadata.helpBookTitle)</title>
-            <meta name="robots" content="index, anchors" />
-            <link rel="stylesheet" href="../assets/style.css">
-        </head>
-        <body>
-            \(sidebarHTML)
-            <div id="help-main-content" class="help-main-content with-sidebar">
-                <div class="page-content">
-                    <h1>\(project.metadata.helpBookTitle)</h1>
-                    <p>Welcome to the help documentation for \(project.metadata.bundleName).</p>
-        """
-
-        // Generate table of contents from file tree (respects mixed file/folder ordering)
-        if let fileTree = project.fileTree, let children = fileTree.children, !children.isEmpty {
-            htmlContent += "\n<h2>Topics</h2>\n"
-            htmlContent += generateIndexFromTree(children, project: project)
-        }
-
-        htmlContent += """
-                </div>
-            </div>
-            \(sidebarJS)
-        </body>
-        </html>
-        """
-
-        try htmlContent.write(to: indexURL, atomically: true, encoding: String.Encoding.utf8)
+        let htmlContent = welcomePageGenerator.generateWelcomePage(project: project)
+        try htmlContent.write(to: welcomeURL, atomically: true, encoding: .utf8)
     }
 
-    private func generateIndexFromTree(_ nodes: [FileTreeNode], project: HelpProject, level: Int = 0) -> String {
-        var html = ""
+    private func generateFrameHTML(_ project: HelpProject, _ bundleURL: URL) throws {
+        let lprojURL = bundleURL.appendingPathComponent("Contents/Resources/en.lproj")
+        let indexURL = lprojURL.appendingPathComponent("index.html")
 
-        if level == 0 {
-            html += "<ul>\n"
-        }
+        let frameHTML = frameGenerator.generateFramePage(
+            project: project,
+            defaultContentPath: "welcome.html"
+        )
 
-        for node in nodes {
-            if node.isDirectory {
-                // Folder - create a section
-                // Use title from _index.md if available, otherwise use folder name
-                let displayName = node.title ?? node.name.replacingOccurrences(of: "-", with: " ")
-                    .replacingOccurrences(of: "_", with: " ")
-
-                if level == 0 {
-                    html += "<li>\n"
-                    html += "<h3>\(displayName)</h3>\n"
-                    // Add description if available
-                    if let description = node.description {
-                        html += "<p class=\"section-description\">\(description)</p>\n"
-                    }
-                } else {
-                    html += "<li><strong>\(displayName)</strong>\n"
-                    // Add description if available
-                    if let description = node.description {
-                        html += "<p class=\"section-description\">\(description)</p>\n"
-                    }
-                }
-
-                if let children = node.children, !children.isEmpty {
-                    html += "<ul>\n"
-                    for child in children {
-                        html += generateIndexFromTree([child], project: project, level: level + 1)
-                    }
-                    html += "</ul>\n"
-                }
-
-                html += "</li>\n"
-            } else if let docId = node.documentId {
-                // File - find the document to get its title and path
-                if let doc = project.documents.first(where: { $0.id == docId }) {
-                    let htmlPath = doc.relativePath.replacingOccurrences(of: ".md", with: ".html")
-                    let title = doc.title
-                    html += "<li><a href=\"\(htmlPath)\">\(title)</a></li>\n"
-                }
-            }
-        }
-
-        if level == 0 {
-            html += "</ul>\n"
-        }
-
-        return html
+        try frameHTML.write(to: indexURL, atomically: true, encoding: .utf8)
     }
 
     private func copyAssets(_ project: HelpProject, _ bundleURL: URL) throws {

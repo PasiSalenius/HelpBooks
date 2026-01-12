@@ -12,7 +12,7 @@ class BreadcrumbGenerator {
         }
 
         // Find path to current document in tree
-        let pathComponents = findPathToDocument(
+        var pathComponents = findPathToDocument(
             documentId: document.id,
             in: fileTree,
             currentPath: []
@@ -22,23 +22,20 @@ class BreadcrumbGenerator {
             return generateSimpleBreadcrumb(document: document)
         }
 
+        // Skip root container directory if present (e.g., "docs" folder)
+        pathComponents = skipRootContainer(pathComponents, fileTree: fileTree)
+
         var html = "<nav class=\"breadcrumb\" aria-label=\"Breadcrumb\">\n"
         html += "<ol>\n"
 
-        // Home link
+        // Home link - points to welcome page to avoid duplicate sidebar in iframe
         let depth = document.relativePath.split(separator: "/").count
         let upLevels = String(repeating: "../", count: depth - 1)
-        html += "<li><a href=\"\(upLevels)index.html\" title=\"Home\">🏠</a></li>\n"
+        html += "<li><a href=\"\(upLevels)welcome.html\" title=\"Home\">🏠</a></li>\n"
 
         // Parent sections
         for (index, component) in pathComponents.enumerated() {
             let isLast = index == pathComponents.count - 1
-
-            // Skip the root node - it's artificial and index.html serves as home
-            // Root node has an empty or minimal relative path
-            if component.isDirectory && (component.relativePath.isEmpty || component.relativePath == "/") {
-                continue
-            }
 
             if component.isDirectory {
                 let displayName = component.title ?? formatName(component.name)
@@ -91,6 +88,40 @@ class BreadcrumbGenerator {
         return []
     }
 
+    /// Skip all root container directories that are just wrappers
+    /// Keep only actual content sections and the document itself
+    private func skipRootContainer(_ pathComponents: [FileTreeNode], fileTree: FileTreeNode) -> [FileTreeNode] {
+        guard !pathComponents.isEmpty else { return pathComponents }
+
+        var filteredComponents: [FileTreeNode] = []
+        var currentNode = fileTree
+
+        for component in pathComponents {
+            // If this is a directory and it's the only child of its parent, skip it
+            if component.isDirectory {
+                // Check if this directory has siblings
+                if let children = currentNode.children {
+                    let siblingDirectories = children.filter { $0.isDirectory }
+
+                    // If there are multiple directories at this level, or if there are both
+                    // directories and files, this is a meaningful section - include it
+                    if siblingDirectories.count > 1 || (siblingDirectories.count >= 1 && children.count > siblingDirectories.count) {
+                        filteredComponents.append(component)
+                    }
+                    // Otherwise skip this container directory
+                }
+
+                // Update currentNode to dive deeper
+                currentNode = component
+            } else {
+                // This is the document itself - always include it
+                filteredComponents.append(component)
+            }
+        }
+
+        return filteredComponents
+    }
+
     private func findIndexDocument(for node: FileTreeNode, in project: HelpProject) -> MarkdownDocument? {
         // Look for a document in the same directory as this folder node
         // _index.md files are not included in documents array (they're filtered out)
@@ -112,14 +143,14 @@ class BreadcrumbGenerator {
     }
 
     private func generateSimpleBreadcrumb(document: MarkdownDocument) -> String {
-        // Calculate relative path to index
+        // Calculate relative path to welcome page
         let depth = document.relativePath.split(separator: "/").count
         let upLevels = String(repeating: "../", count: depth - 1)
 
         return """
         <nav class="breadcrumb" aria-label="Breadcrumb">
             <ol>
-                <li><a href="\(upLevels)index.html" title="Home">🏠</a></li>
+                <li><a href="\(upLevels)welcome.html" title="Home">🏠</a></li>
                 <li aria-current="page"><span>\(escapeHTML(document.title))</span></li>
             </ol>
         </nav>

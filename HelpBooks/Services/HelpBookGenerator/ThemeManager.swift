@@ -87,7 +87,6 @@ class ThemeManager {
             height: 100vh;
             overflow-y: auto;
             background: #f5f5f7;
-            border-right: 1px solid #d2d2d7;
             padding: 0;
             z-index: 100;
         }
@@ -189,12 +188,23 @@ class ThemeManager {
             display: block;
         }
 
+        /* TOC link indentation - root pages align with disclosure arrow, nested pages align with section title */
         .toc-list a {
             display: block;
-            padding: 4px 16px 4px 36px;
+            padding: 4px 16px 4px 20px;
             font-size: 13px;
             text-decoration: none;
             color: #1d1d1f;
+        }
+
+        /* First-level nested pages align with section title text */
+        .toc-section-content .toc-list a {
+            padding-left: 36px;
+        }
+
+        /* Deeper nesting increases indent */
+        .toc-section-content .toc-section-content .toc-list a {
+            padding-left: 60px;
         }
 
         .toc-list a:hover {
@@ -641,7 +651,6 @@ class ThemeManager {
             height: 100vh;
             overflow-y: auto;
             background: linear-gradient(to bottom, #f7f7f7 0%, #ebebeb 100%);
-            border-right: 1px solid #c0c0c0;
             padding: 0;
             z-index: 100;
             box-shadow: inset -1px 0 0 #fafafa;
@@ -684,7 +693,7 @@ class ThemeManager {
         .toc-section-header {
             display: flex;
             align-items: center;
-            padding: 3px 12px;
+            padding: 3px 16px;
         }
 
         .toc-section-header[onclick] {
@@ -721,12 +730,23 @@ class ThemeManager {
             display: block;
         }
 
+        /* TOC link indentation - root pages align with disclosure arrow, nested pages align with section title */
         .toc-list a {
             display: block;
-            padding: 3px 12px 3px 32px;
+            padding: 3px 12px 3px 18px;
             font-size: 12px;
             text-decoration: none;
             color: #333333;
+        }
+
+        /* First-level nested pages align with section title text */
+        .toc-section-content .toc-list a {
+            padding-left: 34px;
+        }
+
+        /* Deeper nesting increases indent */
+        .toc-section-content .toc-section-content .toc-list a {
+            padding-left: 54px;
         }
 
         .toc-list a:hover {
@@ -999,7 +1019,6 @@ class ThemeManager {
 
             .help-sidebar {
                 background: linear-gradient(to bottom, #2a2a2a 0%, #1f1f1f 100%);
-                border-right: 1px solid #0a0a0a;
                 box-shadow: inset -1px 0 0 #3a3a3a;
             }
 
@@ -1197,7 +1216,6 @@ class ThemeManager {
             height: 100vh;
             overflow-y: auto;
             background: #e8e8e8 url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="2" height="2"><rect fill="%23e0e0e0" width="1" height="1"/><rect fill="%23ececec" width="1" height="1" x="1"/><rect fill="%23ececec" width="1" height="1" y="1"/><rect fill="%23e0e0e0" width="1" height="1" x="1" y="1"/></svg>');
-            border-right: 2px solid #999999;
             padding: 0;
             z-index: 100;
         }
@@ -1240,7 +1258,7 @@ class ThemeManager {
         .toc-section-header {
             display: flex;
             align-items: center;
-            padding: 2px 10px;
+            padding: 2px 12px;
         }
 
         .toc-section-header[onclick] {
@@ -1277,12 +1295,23 @@ class ThemeManager {
             display: block;
         }
 
+        /* TOC link indentation - root pages align with disclosure arrow, nested pages align with section title */
         .toc-list a {
             display: block;
-            padding: 2px 10px 2px 28px;
+            padding: 2px 10px 2px 15px;
             font-size: 11px;
             text-decoration: none;
             color: #000000;
+        }
+
+        /* First-level nested pages align with section title text */
+        .toc-section-content .toc-list a {
+            padding-left: 27px;
+        }
+
+        /* Deeper nesting increases indent */
+        .toc-section-content .toc-section-content .toc-list a {
+            padding-left: 45px;
         }
 
         .toc-list a:hover {
@@ -1555,7 +1584,6 @@ class ThemeManager {
 
             .help-sidebar {
                 background: #252525 url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAYAAACp8Z5+AAAAGElEQVQIW2NkYGD4z8DAwMgABXAGNgGAAA8ABAECAwCq3QAAAABJRU5ErkJggg==') repeat;
-                border-right: 1px solid #000000;
             }
 
             .sidebar-header {

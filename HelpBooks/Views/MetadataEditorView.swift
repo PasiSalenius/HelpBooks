@@ -83,6 +83,13 @@ struct MetadataEditorView: View {
                             .textFieldStyle(.roundedBorder)
                     }
 
+                    FormRow(label: "Base URL:") {
+                        TextField("https://example.com/docs", text: $metadata.baseURL)
+                            .textFieldStyle(.roundedBorder)
+                    }
+
+                    FormRowHelp(text: "Base URL is used to convert absolute links in your markdown files to relative links. For example, if your markdown contains links to https://example.com/docs/page.html, they will be converted to relative links that work in the help book.")
+
                     FormRow(label: "KB Product:") {
                         TextField("Optional", text: $metadata.kbProduct)
                             .textFieldStyle(.roundedBorder)
@@ -98,7 +105,7 @@ struct MetadataEditorView: View {
             }
             .padding(20)
         }
-        .frame(width: 500, height: 500)
+        .frame(width: 500, height: 550)
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
                 Button("Done") {

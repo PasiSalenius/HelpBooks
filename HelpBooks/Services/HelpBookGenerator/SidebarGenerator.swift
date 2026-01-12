@@ -19,15 +19,15 @@ class SidebarGenerator {
             <div class="sidebar-content">
         """
 
-        // Generate tree from root children
-        if let children = fileTree.children {
-            html += generateTreeHTML(
-                nodes: children,
-                project: project,
-                currentPath: currentPath,
-                level: 0
-            )
-        }
+        // Get the actual content nodes, skipping root container if needed
+        let contentNodes = getContentNodes(from: fileTree)
+
+        html += generateTreeHTML(
+            nodes: contentNodes,
+            project: project,
+            currentPath: currentPath,
+            level: 0
+        )
 
         html += """
             </div>
@@ -35,6 +35,26 @@ class SidebarGenerator {
         """
 
         return html
+    }
+
+    /// Gets the actual content nodes, skipping the root container directory if present
+    /// If there's a single root directory containing all content, return its children instead
+    private func getContentNodes(from root: FileTreeNode) -> [FileTreeNode] {
+        guard let children = root.children, !children.isEmpty else {
+            return []
+        }
+
+        // If there's only one child and it's a directory, it's likely a root container
+        // Skip it and return its children instead
+        if children.count == 1,
+           let singleChild = children.first,
+           singleChild.isDirectory,
+           let grandchildren = singleChild.children {
+            return grandchildren
+        }
+
+        // Otherwise return children as-is
+        return children
     }
 
     private func generateTreeHTML(
@@ -86,7 +106,7 @@ class SidebarGenerator {
                     // Calculate relative path from current page to target page
                     let relativePath = self.calculateRelativePath(from: currentPath, to: htmlPath)
 
-                    html += "<li><a href=\"\(escapeHTML(relativePath))\"\(currentClass)>\(escapeHTML(doc.title))</a></li>\n"
+                    html += "<li><a href=\"\(escapeHTML(relativePath))\" target=\"content-frame\"\(currentClass)>\(escapeHTML(doc.title))</a></li>\n"
                 }
             }
         }

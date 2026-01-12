@@ -33,6 +33,9 @@ struct HelpBookMetadata: Codable {
     // Theme Settings
     var theme: HelpBookTheme = .modern
 
+    // Link Rewriting
+    var baseURL: String = ""  // Base URL to convert to relative links (e.g., "https://example.com/docs")
+
     init(
         bundleIdentifier: String,
         bundleName: String,

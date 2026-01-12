@@ -29,7 +29,8 @@ class HTMLGenerator {
     func generate(
         document: MarkdownDocument,
         metadata: HelpBookMetadata,
-        project: HelpProject
+        project: HelpProject,
+        includeSidebar: Bool = false
     ) throws -> String {
         guard let htmlBody = document.htmlContent else {
             throw HTMLGeneratorError.noHTMLContent
@@ -90,32 +91,40 @@ class HTMLGenerator {
             try link.attr("rel", "stylesheet")
             try link.attr("href", "\(upLevels)assets/style.css")
 
-            // Generate sidebar
+            // Generate sidebar only if includeSidebar is true
             let currentHtmlPath = document.relativePath.replacingOccurrences(of: ".md", with: ".html")
-            let sidebarHTML = sidebarGenerator.generateSidebar(
-                project: project,
-                currentPath: currentHtmlPath
-            )
+            let sidebarHTML: String?
+            let sidebarJS: String?
 
-            // Generate breadcrumbs
+            if includeSidebar {
+                sidebarHTML = sidebarGenerator.generateSidebar(
+                    project: project,
+                    currentPath: currentHtmlPath
+                )
+                sidebarJS = sidebarGenerator.generateSidebarJavaScript()
+            } else {
+                sidebarHTML = nil
+                sidebarJS = nil
+            }
+
+            // Always generate breadcrumbs for content pages
             let breadcrumbsHTML = breadcrumbGenerator.generateBreadcrumbs(
                 document: document,
                 project: project
             )
 
-            // Generate JavaScript for sidebar
-            let sidebarJS = sidebarGenerator.generateSidebarJavaScript()
-
             // Build body structure (AFTER head)
             let body = try html.appendElement("body")
 
-            // Add sidebar
-            try body.append(sidebarHTML)
+            // Add sidebar if included
+            if let sidebar = sidebarHTML {
+                try body.append(sidebar)
+            }
 
             // Create main content wrapper
             let mainDiv = try body.appendElement("div")
             try mainDiv.attr("id", "help-main-content")
-            try mainDiv.attr("class", "help-main-content with-sidebar")
+            try mainDiv.attr("class", includeSidebar ? "help-main-content with-sidebar" : "help-main-content")
 
             // Add breadcrumbs to main
             try mainDiv.append(breadcrumbsHTML)
@@ -137,11 +146,18 @@ class HTMLGenerator {
             // Add the processed markdown content
             try pageContent.append(try tempBody.html())
 
-            // Add JavaScript for sidebar at the end of body
-            try body.append(sidebarJS)
+            // Add JavaScript for sidebar at the end of body if included
+            if let js = sidebarJS {
+                try body.append(js)
+            }
 
             // Fix image paths in the body
             try fixImagePaths(doc, depth: depth)
+
+            // Rewrite absolute URLs to relative paths if baseURL is configured
+            if !metadata.baseURL.isEmpty {
+                try rewriteAbsoluteLinks(doc, document: document, project: project, baseURL: metadata.baseURL, depth: depth)
+            }
 
             // Add named anchors to headings for deep linking
             try addNamedAnchors(doc)
@@ -221,6 +237,106 @@ class HTMLGenerator {
                 let fileName = URL(fileURLWithPath: src).lastPathComponent
                 try img.attr("src", "\(upLevels)assets/\(fileName)")
             }
+        }
+    }
+
+    private func rewriteAbsoluteLinks(_ doc: Document, document: MarkdownDocument, project: HelpProject, baseURL: String, depth: Int) throws {
+        let links = try doc.select("a[href]")
+
+        // Extract the directory prefix from the base URL
+        // e.g., https://proxygen.app/docs → "docs"
+        let baseURLPath = URL(string: baseURL)?.path ?? ""
+        let baseDirName = baseURLPath.split(separator: "/").last.map(String.init) ?? ""
+
+        for link in links.array() {
+            guard let href = try? link.attr("href"), !href.isEmpty else { continue }
+
+            // Check if this is an absolute URL that starts with our baseURL
+            if href.hasPrefix(baseURL) {
+                // Extract the path after the base URL
+                var targetPath = String(href.dropFirst(baseURL.count))
+
+                // Remove leading slash if present
+                if targetPath.hasPrefix("/") {
+                    targetPath = String(targetPath.dropFirst())
+                }
+
+                // Remove any fragment/anchor for path calculation
+                var pathWithoutFragment: String
+                let fragment: String?
+                if let hashIndex = targetPath.firstIndex(of: "#") {
+                    pathWithoutFragment = String(targetPath[..<hashIndex])
+                    fragment = String(targetPath[hashIndex...])
+                } else {
+                    pathWithoutFragment = targetPath
+                    fragment = nil
+                }
+
+                // Remove trailing slashes from path (after extracting fragment)
+                if pathWithoutFragment.hasSuffix("/") {
+                    pathWithoutFragment.removeLast()
+                }
+
+                // Convert .md to .html, or add .html if no extension present
+                var targetPathHtml = pathWithoutFragment.replacingOccurrences(of: ".md", with: ".html")
+
+                // If no extension at all, add .html
+                if !targetPathHtml.hasSuffix(".html") && !targetPathHtml.contains(".") {
+                    targetPathHtml += ".html"
+                }
+
+                // Normalize the current document path to URL space
+                // by stripping the directory prefix that corresponds to the base URL
+                let currentDocPath = document.relativePath.replacingOccurrences(of: ".md", with: ".html")
+                var normalizedCurrentPath = currentDocPath
+
+                // If we found a base directory name and the current path starts with it, strip it
+                if !baseDirName.isEmpty && currentDocPath.hasPrefix(baseDirName + "/") {
+                    normalizedCurrentPath = String(currentDocPath.dropFirst(baseDirName.count + 1))
+                }
+
+                // Calculate proper relative path in normalized URL space
+                let relativePath = calculateRelativePath(from: normalizedCurrentPath, to: targetPathHtml)
+
+                // Reconstruct the href with fragment if present
+                let newHref = fragment != nil ? relativePath + fragment! : relativePath
+
+                try link.attr("href", newHref)
+            }
+        }
+    }
+
+    private func calculateRelativePath(from: String, to: String) -> String {
+        let fromComponents = Array(from.split(separator: "/").dropLast()) // Remove filename, get directory
+        let toComponents = Array(to.split(separator: "/"))
+
+        // Find common prefix
+        var commonCount = 0
+        let minCount = min(fromComponents.count, toComponents.count)
+        for i in 0..<minCount {
+            if fromComponents[i] == toComponents[i] {
+                commonCount += 1
+            } else {
+                break
+            }
+        }
+
+        // Calculate how many levels to go up from the "from" directory
+        let upLevels = fromComponents.count - commonCount
+        let upPath = String(repeating: "../", count: upLevels)
+
+        // Take the non-common part of the "to" path
+        let remainingToComponents = toComponents.dropFirst(commonCount)
+        let downPath = remainingToComponents.joined(separator: "/")
+
+        // If both are empty, files are in the same directory
+        if upPath.isEmpty && !downPath.isEmpty {
+            return downPath
+        } else if upPath.isEmpty && downPath.isEmpty {
+            // Same file? Shouldn't happen but handle gracefully
+            return to.split(separator: "/").last.map(String.init) ?? to
+        } else {
+            return upPath + downPath
         }
     }
 
