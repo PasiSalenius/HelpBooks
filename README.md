@@ -14,9 +14,11 @@ A native macOS application and command-line tool for creating Apple Help Books f
 - 🌓 **Dark Mode Support** - Full support for macOS light and dark appearances
 - ⚡ **Lotus Docs Shortcodes** - Full support for Lotus Docs alert boxes and other shortcodes
 
-## Screenshot
+## Screenshots
 
 ![HelpBooks App Interface](screenshot.png)
+
+![Exported Help Book](screenshot-help-book.png)
 
 ## Installation
 
