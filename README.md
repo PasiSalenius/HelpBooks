@@ -16,9 +16,9 @@ A native macOS application and command-line tool for creating Apple Help Books f
 
 ## Screenshots
 
-![HelpBooks App Interface](screenshot.png)
+![HelpBooks App Interface](screenshot-helpbooks.png)
 
-![Exported Help Book](screenshot-help-book.png)
+![Exported Help Book](screenshot-export.png)
 
 ## Installation
 
