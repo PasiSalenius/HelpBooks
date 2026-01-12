@@ -204,10 +204,7 @@ After exporting your Help Book:
 The CLI tool provides automation capabilities:
 
 ```bash
-# Create a configuration file interactively
-helpbooks config
-
-# Edit an existing configuration (keeps previous values as defaults)
+# Create or edit a configuration file
 helpbooks config
 
 # Generate Help Book from configuration
