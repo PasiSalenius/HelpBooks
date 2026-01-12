@@ -12,6 +12,7 @@ A native macOS application and command-line tool for creating Apple Help Books f
 - 🖼️ **Asset Management** - Import and manage images, CSS, and other assets
 - 🚀 **Export Ready** - Generates complete `.help` bundles ready to add to your Xcode project
 - 🌓 **Dark Mode Support** - Full support for macOS light and dark appearances
+- 🎨 **Multiple Themes** - Choose from Modern, Mavericks, or Tiger styling
 - ⚡ **Lotus Docs Shortcodes** - Full support for Lotus Docs alert boxes and other shortcodes
 
 ## Screenshots
@@ -125,6 +126,49 @@ HelpBooks supports alert boxes using shortcode syntax:
 
 **Supported contexts:** `info`, `primary`, `warning`, `danger`, `success`, `light`, `dark`
 
+## Themes and Styling
+
+HelpBooks offers three built-in themes that match different macOS design eras:
+
+### Modern (Default)
+- Contemporary macOS design language
+- San Francisco font system
+- Clean, minimal interface with generous whitespace
+- Full dark mode support with system colors
+- Best for apps targeting macOS 11 (Big Sur) and later
+
+### Mavericks
+- OS X 10.9 Mavericks era styling (2013-2014)
+- Lucida Grande font
+- Classic macOS appearance with subtle gradients
+- Full dark mode support
+- Ideal for apps maintaining compatibility with older macOS versions
+
+### Tiger
+- OS X 10.4 Tiger era styling (2005-2007)
+- Geneva/Lucida Grande fonts
+- Classic Aqua-inspired interface
+- Full dark mode support
+- Perfect for retro-styled applications or nostalgia
+
+### Selecting a Theme
+
+**In the GUI App:**
+- Select your theme from the "Style" dropdown in the Metadata Editor
+- Preview updates immediately to show the selected theme
+- Theme is saved with your project and applied on export
+
+**In the CLI Tool:**
+- Set the `theme` field in your `helpbooks.json` configuration file
+- Valid values: `modern`, `mavericks`, `tiger`
+- See the CLI Configuration section below for details
+
+All themes support:
+- Responsive layouts that prevent horizontal scrolling
+- Full light and dark mode support
+- Proper rendering of alert boxes, code blocks, and tables
+- Collapsible table of contents navigation
+
 ## Integration with Your macOS App
 
 After exporting your Help Book:
@@ -186,6 +230,34 @@ GENERATE OPTIONS:
   --assets <path>         Override assets folder path
   -o, --output <path>     Override output folder path
 ```
+
+### CLI Configuration File
+
+The `helpbooks.json` configuration file supports the following fields:
+
+```json
+{
+  "helpBookTitle": "My App Help",
+  "helpBookIdentifier": "com.company.myapp.help",
+  "helpBookVersion": "1.0",
+  "contentDirectory": "./content",
+  "assetsDirectory": "./assets",
+  "outputDirectory": "./build",
+  "theme": "modern"
+}
+```
+
+**Configuration Fields:**
+
+- `helpBookTitle` - The title of your help book (appears in the sidebar header)
+- `helpBookIdentifier` - Unique bundle identifier (should match your Info.plist)
+- `helpBookVersion` - Version string for the help book
+- `contentDirectory` - Path to folder containing Markdown files
+- `assetsDirectory` - Path to folder containing images and other assets (optional)
+- `outputDirectory` - Path where the `.help` bundle will be generated
+- `theme` - Visual theme for the help book: `modern`, `mavericks`, or `tiger` (default: `modern`)
+
+Run `helpbooks config` to create a configuration file interactively.
 
 ## Project Architecture
 
