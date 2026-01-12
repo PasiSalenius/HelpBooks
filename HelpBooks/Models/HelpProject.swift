@@ -5,6 +5,7 @@ class HelpProject {
     var id: UUID
     var name: String
     var sourceDirectory: URL?
+    var assetsDirectory: URL?
     var documents: [MarkdownDocument]
     var fileTree: FileTreeNode?
     var metadata: HelpBookMetadata
@@ -40,6 +41,7 @@ class HelpProject {
         id: UUID = UUID(),
         name: String,
         sourceDirectory: URL? = nil,
+        assetsDirectory: URL? = nil,
         documents: [MarkdownDocument] = [],
         fileTree: FileTreeNode? = nil,
         metadata: HelpBookMetadata,
@@ -50,6 +52,7 @@ class HelpProject {
         self.id = id
         self.name = name
         self.sourceDirectory = sourceDirectory
+        self.assetsDirectory = assetsDirectory
         self.documents = documents
         self.fileTree = fileTree
         self.metadata = metadata

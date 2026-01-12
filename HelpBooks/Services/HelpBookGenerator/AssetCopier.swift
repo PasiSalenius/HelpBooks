@@ -50,18 +50,16 @@ class AssetCopier {
         }
     }
 
-    func copyDefaultStylesheet(to bundleURL: URL, customCSS: String? = nil) throws {
+    func copyDefaultStylesheet(
+        to bundleURL: URL,
+        theme: HelpBookTheme
+    ) throws {
         let destURL = bundleURL
             .appendingPathComponent("Contents/Resources/assets/style.css")
 
-        if let customCSS {
-            // Use provided custom CSS
-            try customCSS.write(to: destURL, atomically: true, encoding: .utf8)
-        } else {
-            // Use default CSS
-            let defaultCSS = Self.defaultHelpBookCSS
-            try defaultCSS.write(to: destURL, atomically: true, encoding: .utf8)
-        }
+        // Get CSS from ThemeManager based on selected theme
+        let css = ThemeManager.css(for: theme)
+        try css.write(to: destURL, atomically: true, encoding: String.Encoding.utf8)
     }
 
     static var defaultHelpBookCSS: String {

@@ -62,6 +62,24 @@ class HelpBooksCLI {
         let assetsPath = prompt("Assets folder path (optional): ")
         let outputPath = prompt("Output folder path: ")
 
+        print("")
+        print("Theme Selection:")
+        print("1. Modern (current macOS design)")
+        print("2. Mavericks (OS X 10.9 style)")
+        print("3. Tiger (OS X 10.4 style)")
+        let themeChoice = prompt("Choose theme (1-3, default: 1): ")
+
+        let theme: String?
+
+        switch themeChoice {
+        case "2":
+            theme = "Mavericks"
+        case "3":
+            theme = "Tiger"
+        default:
+            theme = "Modern"
+        }
+
         let config = CLIConfig(
             bundleIdentifier: bundleId,
             bundleName: bundleName,
@@ -71,7 +89,8 @@ class HelpBooksCLI {
             outputPath: outputPath,
             bundleVersion: "1.0",
             bundleShortVersionString: "1.0",
-            developmentRegion: "en"
+            developmentRegion: "en",
+            theme: theme
         )
 
         try config.save(to: configPath)
@@ -181,6 +200,11 @@ class HelpBooksCLI {
         project.metadata.bundleVersion = config.bundleVersion
         project.metadata.bundleShortVersionString = config.bundleShortVersionString
         project.metadata.developmentRegion = config.developmentRegion
+
+        // Set theme if specified
+        if let themeString = config.theme, let theme = HelpBookTheme(rawValue: themeString) {
+            project.metadata.theme = theme
+        }
 
         // Build
         let builder = HelpBookBuilder()

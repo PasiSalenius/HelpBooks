@@ -4,35 +4,21 @@ import WebKit
 struct PreviewPane: View {
     let document: MarkdownDocument
     let assets: [AssetReference]
+    let theme: HelpBookTheme
     @Bindable var viewModel: PreviewViewModel
     @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
-        VStack(spacing: 0) {
-            // Toolbar
-            HStack {
-                Text("Preview: \(document.title)")
-                    .font(.headline)
-
-                Spacer()
-
-                Button {
-                    viewModel.refresh()
-                } label: {
-                    Label("Refresh", systemImage: "arrow.clockwise")
-                }
-            }
-            .padding(15)
-            .background(Color(nsColor: .controlBackgroundColor))
-
-            // WebView
-            WebView(
-                html: viewModel.htmlForPreview(document, colorScheme: colorScheme),
-                assets: assets,
-                colorScheme: colorScheme
-            )
-            .id(document.id.uuidString + String(viewModel.refreshTrigger) + (colorScheme == .dark ? "dark" : "light"))
-        }
+        WebView(
+            html: viewModel.htmlForPreview(
+                document,
+                colorScheme: colorScheme,
+                theme: theme
+            ),
+            assets: assets,
+            colorScheme: colorScheme
+        )
+        .id(document.id.uuidString + String(viewModel.refreshTrigger) + (colorScheme == .dark ? "dark" : "light") + theme.rawValue)
     }
 }
 

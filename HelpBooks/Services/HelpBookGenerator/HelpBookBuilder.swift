@@ -88,7 +88,11 @@ class HelpBookBuilder {
         // Phase 3.5: Generate index.html
         try generateIndexHTML(project, bundleURL)
 
-        // Phase 3.6: Generate Table of Contents
+        // Phase 3.6: Generate section index pages
+        let sectionIndexGenerator = SectionIndexGenerator()
+        try sectionIndexGenerator.generateSectionIndexes(project: project, at: bundleURL)
+
+        // Phase 3.7: Generate Table of Contents
         try tocGenerator.generate(project: project, at: bundleURL)
 
         // Phase 4: Copy assets
@@ -117,7 +121,8 @@ class HelpBookBuilder {
             // Generate HTML with meta tags
             let html = try htmlGenerator.generate(
                 document: doc,
-                metadata: project.metadata
+                metadata: project.metadata,
+                project: project
             )
 
             // Preserve folder structure
@@ -150,6 +155,14 @@ class HelpBookBuilder {
             .appendingPathComponent("Contents/Resources/en.lproj")
         let indexURL = lprojURL.appendingPathComponent("index.html")
 
+        // Generate sidebar for index page
+        let sidebarGenerator = SidebarGenerator()
+        let sidebarHTML = sidebarGenerator.generateSidebar(
+            project: project,
+            currentPath: "index.html"
+        )
+        let sidebarJS = sidebarGenerator.generateSidebarJavaScript()
+
         // Build HTML content
         var htmlContent = """
         <!DOCTYPE html>
@@ -162,8 +175,11 @@ class HelpBookBuilder {
             <link rel="stylesheet" href="../assets/style.css">
         </head>
         <body>
-            <h1>\(project.metadata.helpBookTitle)</h1>
-            <p>Welcome to the help documentation for \(project.metadata.bundleName).</p>
+            \(sidebarHTML)
+            <div id="help-main-content" class="help-main-content with-sidebar">
+                <div class="page-content">
+                    <h1>\(project.metadata.helpBookTitle)</h1>
+                    <p>Welcome to the help documentation for \(project.metadata.bundleName).</p>
         """
 
         // Generate table of contents from file tree (respects mixed file/folder ordering)
@@ -173,11 +189,14 @@ class HelpBookBuilder {
         }
 
         htmlContent += """
+                </div>
+            </div>
+            \(sidebarJS)
         </body>
         </html>
         """
 
-        try htmlContent.write(to: indexURL, atomically: true, encoding: .utf8)
+        try htmlContent.write(to: indexURL, atomically: true, encoding: String.Encoding.utf8)
     }
 
     private func generateIndexFromTree(_ nodes: [FileTreeNode], project: HelpProject, level: Int = 0) -> String {
@@ -254,9 +273,12 @@ class HelpBookBuilder {
             }
         }
 
-        // Copy default CSS if no custom CSS provided
+        // Copy themed CSS if no custom CSS asset provided
         if !hasCustomCSS {
-            try assetCopier.copyDefaultStylesheet(to: bundleURL)
+            try assetCopier.copyDefaultStylesheet(
+                to: bundleURL,
+                theme: project.metadata.theme
+            )
         }
 
         progress = 0.85

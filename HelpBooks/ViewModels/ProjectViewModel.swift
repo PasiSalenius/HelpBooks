@@ -103,6 +103,7 @@ class ProjectViewModel {
                 if let assetsURL = assetsURL {
                     let assets = try await fileImporter.scanAssets(at: assetsURL, referencedBy: importedProject.documents)
                     importedProject.assets.append(contentsOf: assets)
+                    importedProject.assetsDirectory = assetsURL
                     print("✅ Imported \(assets.count) assets")
                 }
 
@@ -136,6 +137,8 @@ class ProjectViewModel {
                             currentProject.assets.append(asset)
                         }
                     }
+                    // Update assets directory to the most recently used folder
+                    currentProject.assetsDirectory = url
                     self.project = currentProject
                     print("✅ Added \(newAssets.count) assets (Total: \(currentProject.assets.count))")
                 }

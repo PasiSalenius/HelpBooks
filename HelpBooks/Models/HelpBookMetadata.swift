@@ -1,5 +1,13 @@
 import Foundation
 
+enum HelpBookTheme: String, Codable, CaseIterable {
+    case modern = "Modern"
+    case mavericks = "Mavericks"
+    case tiger = "Tiger"
+
+    var displayName: String { rawValue }
+}
+
 struct HelpBookMetadata: Codable {
     // Bundle Info
     var bundleIdentifier: String
@@ -21,6 +29,9 @@ struct HelpBookMetadata: Codable {
     var kbProduct: String = ""
     var kbURL: String = ""
     var remoteURL: String = ""
+
+    // Theme Settings
+    var theme: HelpBookTheme = .modern
 
     init(
         bundleIdentifier: String,
@@ -65,5 +76,29 @@ struct HelpBookMetadata: Codable {
         }
 
         return plist
+    }
+}
+
+// MARK: - UserDefaults Persistence
+
+extension HelpBookMetadata {
+    private static let userDefaultsKey = "SavedHelpBookMetadata"
+
+    /// Load previously saved metadata from UserDefaults
+    static func loadFromUserDefaults() -> HelpBookMetadata? {
+        guard let data = UserDefaults.standard.data(forKey: userDefaultsKey) else {
+            return nil
+        }
+
+        let decoder = JSONDecoder()
+        return try? decoder.decode(HelpBookMetadata.self, from: data)
+    }
+
+    /// Save metadata to UserDefaults
+    func saveToUserDefaults() {
+        let encoder = JSONEncoder()
+        if let data = try? encoder.encode(self) {
+            UserDefaults.standard.set(data, forKey: Self.userDefaultsKey)
+        }
     }
 }

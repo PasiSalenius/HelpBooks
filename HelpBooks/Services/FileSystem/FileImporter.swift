@@ -13,14 +13,34 @@ class FileImporter {
         }
 
         let name = url.lastPathComponent
-        var project = HelpProject(
-            name: name,
-            sourceDirectory: url,
-            metadata: HelpBookMetadata(
+
+        // Load saved metadata from UserDefaults, or create default
+        let savedMetadata = HelpBookMetadata.loadFromUserDefaults()
+        var metadata: HelpBookMetadata
+        if let saved = savedMetadata {
+            // Use saved metadata but update the bundle name and title for new project
+            metadata = HelpBookMetadata(
+                bundleIdentifier: saved.bundleIdentifier,
+                bundleName: name,
+                helpBookTitle: "\(name) Help"
+            )
+            // Preserve saved settings
+            metadata.bundleVersion = saved.bundleVersion
+            metadata.bundleShortVersionString = saved.bundleShortVersionString
+            metadata.developmentRegion = saved.developmentRegion
+            metadata.theme = saved.theme
+        } else {
+            metadata = HelpBookMetadata(
                 bundleIdentifier: "com.example.\(name).help",
                 bundleName: name,
                 helpBookTitle: "\(name) Help"
             )
+        }
+
+        var project = HelpProject(
+            name: name,
+            sourceDirectory: url,
+            metadata: metadata
         )
 
         // Scan for markdown files

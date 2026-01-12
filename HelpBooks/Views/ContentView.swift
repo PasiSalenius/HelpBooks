@@ -1,4 +1,5 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct ContentView: View {
     @State private var viewModel = ProjectViewModel()
@@ -49,6 +50,7 @@ struct ContentView: View {
                     PreviewPane(
                         document: document,
                         assets: project.assets,
+                        theme: project.metadata.theme,
                         viewModel: viewModel.previewViewModel
                     )
                 } else {
@@ -67,7 +69,26 @@ struct ContentView: View {
         .navigationSplitViewColumnWidth(min: 180, ideal: 230, max: 400)
         .toolbar {
             ToolbarItemGroup {
-                if viewModel.project != nil {
+                if let project = viewModel.project {
+                    // Style picker
+                    Menu {
+                        Picker("Style", selection: Binding(
+                            get: { project.metadata.theme },
+                            set: { newTheme in
+                                project.metadata.theme = newTheme
+                                project.metadata.saveToUserDefaults()
+                            }
+                        )) {
+                            ForEach(HelpBookTheme.allCases, id: \.self) { theme in
+                                Text(theme.displayName).tag(theme)
+                            }
+                        }
+                        .pickerStyle(.inline)
+                    } label: {
+                        Text(project.metadata.theme.displayName)
+                    }
+                    .menuIndicator(.visible)
+
                     Button {
                         showingMetadataEditor = true
                     } label: {
@@ -135,4 +156,5 @@ struct ContentView: View {
             }
         }
     }
+
 }

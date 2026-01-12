@@ -98,9 +98,9 @@ struct ExportDialogView: View {
                     HStack {
                         VStack(alignment: .leading, spacing: 4) {
                             Text("CFBundleHelpBookFolder")
-                                .font(.system(.caption, design: .monospaced))
+                                .font(.system(.body, design: .monospaced))
                             Text("CFBundleHelpBookName")
-                                .font(.system(.caption, design: .monospaced))
+                                .font(.system(.body, design: .monospaced))
                         }
                         .foregroundColor(.secondary)
 
@@ -148,7 +148,7 @@ struct ExportDialogView: View {
             }
         }
         .padding(24)
-        .frame(width: 600, height: viewModel.isComplete ? 600 : 350)
+        .frame(width: 450, height: viewModel.isComplete ? 400 : 260)
     }
 
     private func copyPlistKeys() {

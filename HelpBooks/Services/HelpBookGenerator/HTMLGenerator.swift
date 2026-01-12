@@ -17,28 +17,38 @@ enum HTMLGeneratorError: Error, LocalizedError {
 
 class HTMLGenerator {
     private let template: String
+    private let breadcrumbGenerator: BreadcrumbGenerator
+    private let sidebarGenerator: SidebarGenerator
 
     init(template: String? = nil) {
         self.template = template ?? Self.defaultTemplate
+        self.breadcrumbGenerator = BreadcrumbGenerator()
+        self.sidebarGenerator = SidebarGenerator()
     }
 
-    func generate(document: MarkdownDocument, metadata: HelpBookMetadata) throws -> String {
+    func generate(
+        document: MarkdownDocument,
+        metadata: HelpBookMetadata,
+        project: HelpProject
+    ) throws -> String {
         guard let htmlBody = document.htmlContent else {
             throw HTMLGeneratorError.noHTMLContent
         }
 
         do {
-            // Parse the HTML content
-            let doc = try SwiftSoup.parse(htmlBody)
+            // Parse the HTML content with just the markdown-generated HTML
+            let tempDoc = try SwiftSoup.parse(htmlBody)
+            let tempBody = try tempDoc.body() ?? tempDoc
 
-            // Ensure the body has an H1 title at the top
-            let body = try doc.body() ?? doc.appendElement("body")
-            try ensureTitleHeading(in: body, title: document.title, subtitle: document.description)
+            // Create a clean document structure
+            let doc = Document("")
+            let html = try doc.appendElement("html")
+            try html.attr("lang", "en")
 
-            // Add meta tags to head
-            let head = try doc.head() ?? doc.appendElement("head")
+            // Build head FIRST (before body) so charset is declared early
+            let head = try html.appendElement("head")
 
-            // Add charset
+            // Add charset as the VERY FIRST element in head
             let charset = try head.appendElement("meta")
             try charset.attr("charset", "UTF-8")
 
@@ -79,6 +89,56 @@ class HTMLGenerator {
             let link = try head.appendElement("link")
             try link.attr("rel", "stylesheet")
             try link.attr("href", "\(upLevels)assets/style.css")
+
+            // Generate sidebar
+            let currentHtmlPath = document.relativePath.replacingOccurrences(of: ".md", with: ".html")
+            let sidebarHTML = sidebarGenerator.generateSidebar(
+                project: project,
+                currentPath: currentHtmlPath
+            )
+
+            // Generate breadcrumbs
+            let breadcrumbsHTML = breadcrumbGenerator.generateBreadcrumbs(
+                document: document,
+                project: project
+            )
+
+            // Generate JavaScript for sidebar
+            let sidebarJS = sidebarGenerator.generateSidebarJavaScript()
+
+            // Build body structure (AFTER head)
+            let body = try html.appendElement("body")
+
+            // Add sidebar
+            try body.append(sidebarHTML)
+
+            // Create main content wrapper
+            let mainDiv = try body.appendElement("div")
+            try mainDiv.attr("id", "help-main-content")
+            try mainDiv.attr("class", "help-main-content with-sidebar")
+
+            // Add breadcrumbs to main
+            try mainDiv.append(breadcrumbsHTML)
+
+            // Create page content wrapper
+            let pageContent = try mainDiv.appendElement("div")
+            try pageContent.attr("class", "page-content")
+
+            // Add title and subtitle to page content
+            let h1 = try pageContent.appendElement("h1")
+            try h1.text(document.title)
+
+            if let subtitle = document.description {
+                let subtitleP = try pageContent.appendElement("p")
+                try subtitleP.attr("class", "subtitle")
+                try subtitleP.text(subtitle)
+            }
+
+            // Add the processed markdown content
+            try pageContent.append(try tempBody.html())
+
+            // Add JavaScript for sidebar at the end of body
+            try body.append(sidebarJS)
 
             // Fix image paths in the body
             try fixImagePaths(doc, depth: depth)

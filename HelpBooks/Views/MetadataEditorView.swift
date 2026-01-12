@@ -102,6 +102,8 @@ struct MetadataEditorView: View {
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
                 Button("Done") {
+                    // Save metadata to UserDefaults for next time
+                    metadata.saveToUserDefaults()
                     dismiss()
                 }
                 .keyboardShortcut(.defaultAction)

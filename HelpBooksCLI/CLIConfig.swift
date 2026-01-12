@@ -10,6 +10,7 @@ struct CLIConfig: Codable {
     var bundleVersion: String
     var bundleShortVersionString: String
     var developmentRegion: String
+    var theme: String?
 
     func save(to path: String) throws {
         let encoder = JSONEncoder()
