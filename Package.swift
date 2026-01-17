@@ -25,8 +25,7 @@ let package = Package(
                 "SwiftSoup",
                 "Yams",
                 "HelpBooksCore"
-            ],
-            path: "HelpBooksCLI"
+            ]
         ),
         .target(
             name: "HelpBooksCore",
@@ -34,17 +33,6 @@ let package = Package(
                 "Down",
                 "SwiftSoup",
                 "Yams"
-            ],
-            path: "HelpBooks",
-            exclude: [
-                "HelpBooksApp.swift",
-                "Views",
-                "ViewModels",
-                "Preview Content"
-            ],
-            sources: [
-                "Models",
-                "Services"
             ]
         )
     ]
