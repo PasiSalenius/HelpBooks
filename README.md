@@ -99,6 +99,7 @@ The `helpbooks.json` configuration file supports the following fields:
 - `outputPath` - Path where the `.help` bundle will be generated
 - `theme` - Visual theme: `Modern`, `Mavericks`, `Tiger`, or `Custom`
 - `customCssPath` - Path to custom CSS file (when theme is `Custom`)
+- `baseURL` - Base URL for automatic link conversion (optional). Links starting with this URL are converted to relative paths. Example: `https://example.com/docs`
 
 ## Content Structure
 
