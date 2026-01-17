@@ -1,20 +1,22 @@
 import Foundation
 import Yams
 
-enum FrontMatterFormat {
+public enum FrontMatterFormat {
     case yaml
     case toml
     case none
 }
 
-enum FrontMatterParserError: Error {
+public enum FrontMatterParserError: Error {
     case invalidFormat
     case unsupportedFormat
     case parsingFailed(String)
 }
 
-class FrontMatterParser {
-    func parse(_ content: String) throws -> (FrontMatter, String) {
+public class FrontMatterParser {
+    public init() {}
+
+    public func parse(_ content: String) throws -> (FrontMatter, String) {
         let format = detectFormat(content)
 
         switch format {

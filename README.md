@@ -5,12 +5,17 @@ A command-line tool for creating Apple Help Books from [Hugo](https://gohugo.io/
 ## Features
 
 - Hugo-compatible frontmatter format and content structure
+- Extensible architecture for adding support for other SSGs (Jekyll, Eleventy, etc.)
 - Supports content organization with `_index.md` files for sections
 - Automatically generates search indexes for macOS Help Viewer
 - Weight-based ordering for pages and sections
 - Multiple themes: Modern, Mavericks, or Tiger styling
 - Custom CSS support for full styling control
 - Lotus Docs alert box shortcode support
+
+## Screenshot
+
+![Exported Help Book](screenshot-export.png)
 
 ## Installation
 
@@ -206,6 +211,78 @@ After generating your Help Book:
    ```
 
 3. **Build and Run** - Your help book will appear in the Help menu
+
+## Extending for Other Static Site Generators
+
+HelpBooks uses a `ContentProvider` protocol to abstract SSG-specific processing. Currently, Hugo is supported, but the architecture allows adding support for other SSGs like Jekyll, Eleventy, or others.
+
+### Project Structure
+
+```
+Sources/
+├── HelpBooksCLI/              # Command-line interface
+└── HelpBooksCore/
+    ├── ContentProviders/      # SSG-specific implementations
+    │   ├── ContentProvider.swift      # Protocol definition
+    │   └── HugoContentProvider.swift  # Hugo implementation
+    ├── Models/                # Data structures
+    └── Services/              # Shared services
+        ├── FileSystem/        # File import
+        ├── MarkdownProcessor/ # Markdown parsing
+        └── HelpBookGenerator/ # Help Book generation
+```
+
+### Adding a New Content Provider
+
+To add support for a new SSG (e.g., Jekyll):
+
+1. Create a new file `Sources/HelpBooksCore/ContentProviders/JekyllContentProvider.swift`
+
+2. Implement the `ContentProvider` protocol:
+
+```swift
+public class JekyllContentProvider: ContentProvider {
+    public var identifier: String { "jekyll" }
+    public var displayName: String { "Jekyll" }
+    public var directoryMetadataFileName: String? { "index.md" }
+    public var skipsUnderscoreFiles: Bool { false }
+
+    public func scanDocuments(...) async throws -> [MarkdownDocument] {
+        // Jekyll-specific document scanning
+    }
+
+    public func scanDirectoryMetadata(at url: URL) -> [String: DirectoryMetadata] {
+        // Jekyll-specific metadata extraction
+    }
+
+    public func processShortcodes(_ content: String) -> String {
+        // Process Jekyll/Liquid includes: {% include ... %}
+    }
+
+    public func buildFileTree(...) -> FileTreeNode {
+        // Jekyll-specific file organization
+    }
+}
+```
+
+3. Register the provider in `ContentProviderRegistry`:
+
+```swift
+// In ContentProvider.swift, update the init:
+private init() {
+    register(HugoContentProvider())
+    register(JekyllContentProvider())
+}
+```
+
+### Key Differences Between SSGs
+
+| Feature | Hugo | Jekyll |
+|---------|------|--------|
+| Section metadata | `_index.md` | `index.md` or frontmatter |
+| Shortcode syntax | `{{< name >}}` | `{% include %}` |
+| Weight ordering | `weight` frontmatter | Custom or alphabetical |
+| Underscore files | Skipped (metadata) | Often used (`_includes/`) |
 
 ## License
 

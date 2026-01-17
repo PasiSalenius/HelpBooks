@@ -1,12 +1,14 @@
 import Foundation
 import Down
 
-enum MarkdownParserError: Error {
+public enum MarkdownParserError: Error {
     case conversionFailed(String)
 }
 
-class MarkdownParser {
-    func convert(_ markdown: String) throws -> String {
+public class MarkdownParser {
+    public init() {}
+
+    public func convert(_ markdown: String) throws -> String {
         do {
             let down = Down(markdownString: markdown)
             // Use .unsafe option to allow raw HTML to pass through
