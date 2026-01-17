@@ -46,6 +46,7 @@ class FrameGenerator {
             \(buildResizeHandle())
             \(buildIframe(src: defaultContentPath))
             \(sidebarJS)
+            \(buildHashNavigationScript())
             \(buildNavigationScript())
             \(buildResizeScript())
         </body>
@@ -416,6 +417,40 @@ class FrameGenerator {
 
             // Listen for keyboard navigation
             document.addEventListener('keydown', handleKeyDown);
+        })();
+        </script>
+        """
+    }
+
+    private func buildHashNavigationScript() -> String {
+        """
+        <script>
+        (function() {
+            'use strict';
+
+            const contentFrame = document.getElementById('content-frame');
+
+            // Check for hash fragment on page load
+            function checkHashNavigation() {
+                const hash = window.location.hash;
+                if (hash && hash.length > 1) {
+                    // Remove the # symbol
+                    const targetPage = hash.substring(1);
+                    // Load the target page in the iframe
+                    contentFrame.src = targetPage;
+                    // Clean up the URL by removing the hash (optional)
+                    // Using replaceState to avoid triggering a navigation event
+                    if (window.history && window.history.replaceState) {
+                        window.history.replaceState(null, '', window.location.pathname);
+                    }
+                }
+            }
+
+            // Run on page load
+            checkHashNavigation();
+
+            // Also handle hash changes (in case the user navigates back/forward)
+            window.addEventListener('hashchange', checkHashNavigation);
         })();
         </script>
         """

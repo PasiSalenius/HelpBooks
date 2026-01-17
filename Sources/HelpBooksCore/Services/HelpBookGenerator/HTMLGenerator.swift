@@ -91,6 +91,12 @@ class HTMLGenerator {
             try link.attr("rel", "stylesheet")
             try link.attr("href", "\(upLevels)assets/style.css")
 
+            // Add iframe detection script (unless sidebar is included)
+            if !includeSidebar {
+                let script = try head.appendElement("script")
+                try script.html(buildIframeDetectionScript(depth: depth, relativePath: document.relativePath))
+            }
+
             // Generate sidebar only if includeSidebar is true
             let currentHtmlPath = document.relativePath.replacingOccurrences(of: ".md", with: ".html")
             let sidebarHTML: String?
@@ -369,6 +375,27 @@ class HTMLGenerator {
             .replacingOccurrences(of: "<", with: "&lt;")
             .replacingOccurrences(of: ">", with: "&gt;")
             .replacingOccurrences(of: "\"", with: "&quot;")
+    }
+
+    /// Generates JavaScript that detects if the page is loaded outside an iframe
+    /// and redirects to the main frame page with a hash fragment
+    private func buildIframeDetectionScript(depth: Int, relativePath: String) -> String {
+        let upLevels = String(repeating: "../", count: depth)
+        let pagePath = relativePath.replacingOccurrences(of: ".md", with: ".html")
+
+        return """
+        (function() {
+            'use strict';
+            // Check if this page is loaded outside of an iframe
+            if (window.self === window.top) {
+                // Not in an iframe - redirect to index.html with this page as the target
+                const indexPath = '\(upLevels)index.html';
+                const targetPage = '\(pagePath)';
+                // Use location.replace to avoid adding to browser history
+                window.location.replace(indexPath + '#' + targetPage);
+            }
+        })();
+        """
     }
 
     static var defaultTemplate: String {
