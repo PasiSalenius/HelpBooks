@@ -69,6 +69,8 @@ class ThemeManager {
             max-width: 100%;
             overflow-x: auto;
             display: block;
+            font-family: inherit;
+            font-size: inherit;
         }
 
         @media (prefers-color-scheme: dark) {
@@ -640,6 +642,8 @@ class ThemeManager {
             max-width: 100%;
             overflow-x: auto;
             display: block;
+            font-family: inherit;
+            font-size: inherit;
         }
 
         /* Sidebar Navigation */
@@ -1205,6 +1209,8 @@ class ThemeManager {
             max-width: 100%;
             overflow-x: auto;
             display: block;
+            font-family: inherit;
+            font-size: inherit;
         }
 
         /* Sidebar Navigation */
