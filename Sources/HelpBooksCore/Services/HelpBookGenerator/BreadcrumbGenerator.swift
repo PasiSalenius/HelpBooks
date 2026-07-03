@@ -77,7 +77,7 @@ class BreadcrumbGenerator {
                 let result = findPathToDocument(
                     documentId: documentId,
                     in: child,
-                    currentPath: currentPath + (node.name.isEmpty ? [] : [node])
+                    currentPath: currentPath + (node.relativePath.isEmpty ? [] : [node])
                 )
                 if !result.isEmpty {
                     return result
